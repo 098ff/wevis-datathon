@@ -2,6 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
+import { motion, useSpring, useTransform } from "framer-motion";
+
+function AnimatedNumber({ value }: { value: number }) {
+    const spring = useSpring(0, { bounce: 0, duration: 1000 });
+    const display = useTransform(
+        spring,
+        (current) => Math.round(current) + "%",
+    );
+
+    useEffect(() => {
+        spring.set(value);
+    }, [value, spring]);
+
+    return <motion.span>{display}</motion.span>;
+}
 
 interface Metric {
     axis: string;
@@ -161,14 +176,24 @@ export default function SpiderChart({
             .radius((d) => rScale(d))
             .curve(d3.curveLinearClosed);
 
+        const radarLineZero = d3
+            .lineRadial<number>()
+            .angle((d, i) => i * angleSlice)
+            .radius(0)
+            .curve(d3.curveLinearClosed);
+
         // Draw the polygon
         g.append("path")
             .datum(data)
-            .attr("d", radarLine)
+            .attr("d", radarLineZero)
             .style("fill", selectedParty.color)
             .style("fill-opacity", 0.3)
             .style("stroke", selectedParty.color)
-            .style("stroke-width", 2);
+            .style("stroke-width", 2)
+            .transition()
+            .duration(800)
+            .ease(d3.easeCubicOut)
+            .attr("d", radarLine);
 
         // Draw points on the polygon
         g.selectAll(".radar-point")
@@ -176,6 +201,15 @@ export default function SpiderChart({
             .enter()
             .append("circle")
             .attr("class", "radar-point")
+            .attr("r", 0)
+            .attr("cx", 0)
+            .attr("cy", 0)
+            .style("fill", selectedParty.color)
+            .style("stroke", "#fff")
+            .style("stroke-width", 2)
+            .transition()
+            .duration(800)
+            .ease(d3.easeCubicOut)
             .attr("r", 5)
             .attr(
                 "cx",
@@ -184,10 +218,7 @@ export default function SpiderChart({
             .attr(
                 "cy",
                 (d, i) => rScale(d) * Math.sin(angleSlice * i - Math.PI / 2),
-            )
-            .style("fill", selectedParty.color)
-            .style("stroke", "#fff")
-            .style("stroke-width", 2);
+            );
     }, [selectedParty]);
 
     return (
@@ -240,7 +271,7 @@ export default function SpiderChart({
                                     className="font-bold text-lg"
                                     style={{ color: selectedParty.color }}
                                 >
-                                    {metric.value}%
+                                    <AnimatedNumber value={metric.value} />
                                 </span>
                             </li>
                         ))}
