@@ -272,22 +272,38 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
     );
 };
 
+import { PartyData } from "./PartyClustering";
+
 interface StackedBarChartProps {
     selectedPartyId?: string;
+    globalPartyData?: PartyData[];
 }
 
 export default function StackedBarChart({
     selectedPartyId = "p1",
+    globalPartyData = [],
 }: StackedBarChartProps = {}) {
-    const selectedParty =
-        mockData.find((p) => p.id === selectedPartyId) || mockData[0];
+    // Map the global color back to our mock performance data
+    const getPartyColor = (id: string, fallback: string) => {
+        const p = globalPartyData.find((gp) => gp.id === id);
+        return p ? p.color : fallback;
+    };
 
-    const top3Parties = mockData
+    const enhancedMockData = mockData.map((p) => ({
+        ...p,
+        color: getPartyColor(p.id, p.color),
+    }));
+
+    const selectedParty =
+        enhancedMockData.find((p) => p.id === selectedPartyId) ||
+        enhancedMockData[0];
+
+    const top3Parties = enhancedMockData
         .filter((p) => p.id !== selectedParty.id)
         .slice(0, 3);
 
-    while (top3Parties.length < 3 && mockData.length >= 3) {
-        const remaining = mockData.find(
+    while (top3Parties.length < 3 && enhancedMockData.length >= 3) {
+        const remaining = enhancedMockData.find(
             (p) => !top3Parties.includes(p) && p.id !== selectedParty.id,
         );
         if (remaining) top3Parties.push(remaining);

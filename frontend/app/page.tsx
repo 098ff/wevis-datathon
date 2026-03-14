@@ -1,15 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
-import PartyClustering from "@/components/PartyClustering";
+import PartyClustering, {
+    extractPartyColors,
+    mockData as partyMockData,
+    PartyData,
+} from "@/components/PartyClustering";
 import SpiderChart from "@/components/SpiderChart";
 import StackedBarChart from "@/components/StackedBarChart";
 import CommentSection from "@/components/CommentSection";
 
 export default function Home() {
     const [selectedPartyId, setSelectedPartyId] = useState("p1");
+    const [globalPartyData, setGlobalPartyData] =
+        useState<PartyData[]>(partyMockData);
+
+    useEffect(() => {
+        let isMounted = true;
+        extractPartyColors(partyMockData).then((updated) => {
+            if (isMounted) {
+                setGlobalPartyData(updated);
+            }
+        });
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     return (
         <>
@@ -40,7 +58,7 @@ export default function Home() {
                             duration: 1,
                         }}
                     >
-                        <PartyClustering />
+                        <PartyClustering initialData={globalPartyData} />
                     </motion.div>
                     <div id="characteristics">
                         <SpiderChart
@@ -49,7 +67,10 @@ export default function Home() {
                         />
                     </div>
                     <div id="performance">
-                        <StackedBarChart selectedPartyId={selectedPartyId} />
+                        <StackedBarChart
+                            selectedPartyId={selectedPartyId}
+                            globalPartyData={globalPartyData}
+                        />
                     </div>
                     <div id="comments">
                         <CommentSection
