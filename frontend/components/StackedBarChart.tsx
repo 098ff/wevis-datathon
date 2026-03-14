@@ -220,14 +220,20 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             ref={containerRef}
             className="flex flex-col items-center bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative"
         >
-            <div className="flex flex-col items-center mb-4 gap-2">
+            <div className="flex items-center justify-center mb-4 gap-3 w-full">
                 <img
                     src={party.logoUrl}
                     alt={party.name}
-                    className="w-14 h-14 rounded-full border-[3px] shadow-sm object-cover"
+                    className="w-12 h-12 rounded-full border-[3px] shadow-sm object-cover shrink-0"
                     style={{ borderColor: party.color }}
-                    title={party.name}
                 />
+                <h4
+                    className="font-bold text-lg truncate"
+                    style={{ color: party.color }}
+                    title={party.name}
+                >
+                    {party.name}
+                </h4>
             </div>
             <div className="w-full max-w-[320px]">
                 <svg ref={svgRef} className="w-full h-auto"></svg>
