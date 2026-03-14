@@ -28,57 +28,8 @@ function AnimatedNumber({
     return <motion.span>{display}</motion.span>;
 }
 
-interface Metric {
-    axis: string;
-    value: number;
-    bills: number;
-}
-
-interface PartyDetail {
-    id: string;
-    name: string;
-    color: string;
-    metrics: Metric[];
-}
-
-const mockParties: PartyDetail[] = [
-    {
-        id: "p1",
-        name: "พรรค A",
-        color: "#ef4444", // Red
-        metrics: [
-            { axis: "เศรษฐกิจ", value: 80, bills: 45 },
-            { axis: "การศึกษา", value: 60, bills: 25 },
-            { axis: "สิ่งแวดล้อม", value: 40, bills: 12 },
-            { axis: "สังคม", value: 70, bills: 38 },
-            { axis: "การเมือง", value: 90, bills: 50 },
-        ],
-    },
-    {
-        id: "p2",
-        name: "พรรค B",
-        color: "#3b82f6", // Blue
-        metrics: [
-            { axis: "เศรษฐกิจ", value: 50, bills: 20 },
-            { axis: "การศึกษา", value: 80, bills: 40 },
-            { axis: "สิ่งแวดล้อม", value: 90, bills: 55 },
-            { axis: "สังคม", value: 60, bills: 28 },
-            { axis: "การเมือง", value: 40, bills: 15 },
-        ],
-    },
-    {
-        id: "p3",
-        name: "พรรค C",
-        color: "#10b981", // Green
-        metrics: [
-            { axis: "เศรษฐกิจ", value: 60, bills: 30 },
-            { axis: "การศึกษา", value: 70, bills: 35 },
-            { axis: "สิ่งแวดล้อม", value: 80, bills: 42 },
-            { axis: "สังคม", value: 80, bills: 45 },
-            { axis: "การเมือง", value: 60, bills: 28 },
-        ],
-    },
-];
+import { Metric, PartyDetail } from "../types";
+import { spiderChartData as mockParties } from "../data/mockData";
 
 interface SpiderChartProps {
     selectedPartyId?: string;

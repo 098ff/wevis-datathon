@@ -3,11 +3,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
-import PartyClustering, {
-    extractPartyColors,
-    mockData as partyMockData,
-    PartyData,
-} from "@/components/PartyClustering";
+import PartyClustering from "@/components/PartyClustering";
+import { extractPartyColors } from "@/utils/colors";
+import { partyClusteringData as partyMockData } from "@/data/mockData";
+import { PartyData } from "@/types";
 import SpiderChart from "@/components/SpiderChart";
 import StackedBarChart from "@/components/StackedBarChart";
 import CommentSection from "@/components/CommentSection";

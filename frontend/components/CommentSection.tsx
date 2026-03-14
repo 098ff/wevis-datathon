@@ -2,72 +2,11 @@
 
 import { useState } from "react";
 import { MessageSquare, User } from "lucide-react";
-
-interface Comment {
-    id: string;
-    partyId: string;
-    author: string;
-    date: string;
-    text: string;
-}
-
-const mockComments: Comment[] = [
-    {
-        id: "c1",
-        partyId: "p1",
-        author: "สมชาย รักดี",
-        date: "2024-03-14T10:30:00Z",
-        text: "พรรคนี้มีนโยบายเศรษฐกิจที่น่าสนใจมากครับ หวังว่าจะทำได้จริงตามที่หาเสียงไว้",
-    },
-    {
-        id: "c2",
-        partyId: "p1",
-        author: "วิภาดา ใจเย็น",
-        date: "2024-03-13T15:45:00Z",
-        text: "อยากให้เน้นเรื่องการศึกษามากกว่านี้หน่อยค่ะ แต่โดยรวมถือว่าโอเค",
-    },
-    {
-        id: "c3",
-        partyId: "p2",
-        author: "เอกพล คนขยัน",
-        date: "2024-03-14T09:15:00Z",
-        text: "ชอบแนวทางการแก้ปัญหาสิ่งแวดล้อมของพรรคนี้ เป็นรูปธรรมดี",
-    },
-    {
-        id: "c4",
-        partyId: "p3",
-        author: "ชยุต สมสู่อาชา",
-        date: "2024-03-12T08:20:00Z",
-        text: "การทำงานในสภาถือว่าโดดเด่นมากครับ ติดตามผลงานตลอด",
-    },
-    {
-        id: "c5",
-        partyId: "p2",
-        author: "ชนัดดา ชมคน",
-        date: "2024-03-12T08:20:00Z",
-        text: "การทำงานในสภาถือว่าโดดเด่นมากครับ ติดตามผลงานตลอด",
-    },
-    {
-        id: "c6",
-        partyId: "p2",
-        author: "นันทพร บาปพัวพัน",
-        date: "2024-03-12T08:20:00Z",
-        text: "การทำงานในสภาถือว่าโดดเด่นมากครับ ติดตามผลงานตลอด",
-    },
-    {
-        id: "c7",
-        partyId: "p1",
-        author: "วิถี ภูษิตาศัย",
-        date: "2024-03-12T08:20:00Z",
-        text: "การทำงานในสภาถือว่าโดดเด่นมากครับ ติดตามผลงานตลอด",
-    },
-];
-
-const parties = [
-    { id: "p1", name: "พรรค A" },
-    { id: "p2", name: "พรรค B" },
-    { id: "p3", name: "พรรค C" },
-];
+import { Comment } from "../types";
+import {
+    commentsData as mockComments,
+    availableParties as parties,
+} from "../data/mockData";
 
 interface CommentSectionProps {
     selectedPartyId?: string;

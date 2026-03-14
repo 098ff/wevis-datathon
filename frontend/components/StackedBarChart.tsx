@@ -2,72 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-
-interface YearData {
-    year: string;
-    votes: number;
-    multitask: number;
-    passedLaws: number;
-}
-
-interface PartyPerformance {
-    id: string;
-    name: string;
-    color: string;
-    logoUrl: string;
-    data: YearData[];
-}
-
-const mockData: PartyPerformance[] = [
-    {
-        id: "p1",
-        name: "พรรค A",
-        color: "#ef4444",
-        logoUrl: "/partys/party_1.jpg",
-        data: [
-            { year: "ปีที่ 1", votes: 30, multitask: 15, passedLaws: 5 },
-            { year: "ปีที่ 2", votes: 35, multitask: 20, passedLaws: 8 },
-            { year: "ปีที่ 3", votes: 40, multitask: 25, passedLaws: 12 },
-            { year: "ปีที่ 4", votes: 45, multitask: 30, passedLaws: 15 },
-        ],
-    },
-    {
-        id: "p2",
-        name: "พรรค B",
-        color: "#3b82f6",
-        logoUrl: "/partys/party_2.jpg",
-        data: [
-            { year: "ปีที่ 1", votes: 40, multitask: 10, passedLaws: 8 },
-            { year: "ปีที่ 2", votes: 42, multitask: 12, passedLaws: 10 },
-            { year: "ปีที่ 3", votes: 45, multitask: 15, passedLaws: 15 },
-            { year: "ปีที่ 4", votes: 50, multitask: 18, passedLaws: 20 },
-        ],
-    },
-    {
-        id: "p3",
-        name: "พรรค C",
-        color: "#10b981",
-        logoUrl: "/partys/party_6.jpg",
-        data: [
-            { year: "ปีที่ 1", votes: 20, multitask: 25, passedLaws: 4 },
-            { year: "ปีที่ 2", votes: 25, multitask: 30, passedLaws: 6 },
-            { year: "ปีที่ 3", votes: 28, multitask: 35, passedLaws: 8 },
-            { year: "ปีที่ 4", votes: 35, multitask: 40, passedLaws: 10 },
-        ],
-    },
-    {
-        id: "p4",
-        name: "พรรค D",
-        color: "#f59e0b",
-        logoUrl: "/partys/party_7.jpg",
-        data: [
-            { year: "ปีที่ 1", votes: 35, multitask: 20, passedLaws: 10 },
-            { year: "ปีที่ 2", votes: 38, multitask: 22, passedLaws: 12 },
-            { year: "ปีที่ 3", votes: 40, multitask: 25, passedLaws: 15 },
-            { year: "ปีที่ 4", votes: 42, multitask: 28, passedLaws: 18 },
-        ],
-    },
-];
+import { YearData, PartyPerformance, PartyData } from "../types";
+import { stackedBarChartData as mockData } from "../data/mockData";
 
 const metricLabels: Record<string, string> = {
     votes: "จำนวนครั้งการลงมติ",
@@ -277,8 +213,6 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
         </div>
     );
 };
-
-import { PartyData } from "./PartyClustering";
 
 interface StackedBarChartProps {
     selectedPartyId?: string;

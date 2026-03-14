@@ -2,195 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
+import { PartyData } from "../types";
+import { partyClusteringData as mockData } from "../data/mockData";
+import { extractPartyColors } from "../utils/colors";
 
-export interface PartyData {
-    id: string;
-    name: string;
-    cluster: number;
-    color: string;
-    scoreX: number;
-    scoreY: number;
-    logoUrl: string;
-    metrics: {
-        billTypes: string;
-        unity: number;
-        successRate: number;
-        attendanceRate: number;
-        votingAlignment: string;
-    };
-}
-
-export const mockData: PartyData[] = [
-    {
-        id: "p1",
-        name: "พรรค A",
-        cluster: 1,
-        color: "#ef4444",
-        scoreX: 20,
-        scoreY: 80,
-        logoUrl: "/partys/party_1.jpg",
-        metrics: {
-            billTypes: "เศรษฐกิจ, สังคม",
-            unity: 95,
-            successRate: 40,
-            attendanceRate: 85,
-            votingAlignment: "ฝ่ายรัฐบาล (80%)",
-        },
-    },
-    {
-        id: "p2",
-        name: "พรรค B",
-        cluster: 1,
-        color: "#f87171",
-        scoreX: 30,
-        scoreY: 70,
-        logoUrl: "/partys/party_2.jpg",
-        metrics: {
-            billTypes: "การศึกษา",
-            unity: 88,
-            successRate: 35,
-            attendanceRate: 78,
-            votingAlignment: "ฝ่ายรัฐบาล (75%)",
-        },
-    },
-    {
-        id: "p3",
-        name: "พรรค C",
-        cluster: 2,
-        color: "#3b82f6",
-        scoreX: 80,
-        scoreY: 20,
-        logoUrl: "/partys/party_6.jpg",
-        metrics: {
-            billTypes: "สิ่งแวดล้อม, สิทธิมนุษยชน",
-            unity: 92,
-            successRate: 20,
-            attendanceRate: 90,
-            votingAlignment: "ฝ่ายค้าน (90%)",
-        },
-    },
-    {
-        id: "p4",
-        name: "พรรค D",
-        cluster: 2,
-        color: "#60a5fa",
-        scoreX: 70,
-        scoreY: 30,
-        logoUrl: "/partys/party_7.jpg",
-        metrics: {
-            billTypes: "กระจายอำนาจ",
-            unity: 85,
-            successRate: 15,
-            attendanceRate: 82,
-            votingAlignment: "ฝ่ายค้าน (85%)",
-        },
-    },
-    {
-        id: "p5",
-        name: "พรรค E",
-        cluster: 3,
-        color: "#10b981",
-        scoreX: 50,
-        scoreY: 50,
-        logoUrl: "/partys/party_8.jpg",
-        metrics: {
-            billTypes: "สวัสดิการ",
-            unity: 75,
-            successRate: 50,
-            attendanceRate: 70,
-            votingAlignment: "สวิงโหวต",
-        },
-    },
-];
-
-export const extractPartyColors = async <
-    T extends { color: string; logoUrl: string },
->(
-    parties: T[],
-): Promise<T[]> => {
-    return Promise.all(
-        parties.map((party) => {
-            return new Promise<T>((resolve) => {
-                const img = new window.Image();
-                img.crossOrigin = "Anonymous";
-                img.src = party.logoUrl;
-                img.onload = () => {
-                    const canvas = document.createElement("canvas");
-                    const ctx = canvas.getContext("2d", {
-                        willReadFrequently: true,
-                    });
-                    if (!ctx) return resolve(party);
-
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-
-                    try {
-                        const imageData = ctx.getImageData(
-                            0,
-                            0,
-                            canvas.width,
-                            canvas.height,
-                        );
-                        const data = imageData.data;
-                        const colorCounts: Record<string, number> = {};
-                        let maxCount = 0;
-                        let dominant = party.color;
-
-                        for (let i = 0; i < data.length; i += 4) {
-                            const r = data[i];
-                            const g = data[i + 1];
-                            const b = data[i + 2];
-                            const a = data[i + 3];
-
-                            if (a < 128) continue;
-
-                            const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-                            if (luminance > 220) continue;
-
-                            const darken = luminance > 150 ? 0.75 : 1;
-                            const dR = Math.floor(r * darken);
-                            const dG = Math.floor(g * darken);
-                            const dB = Math.floor(b * darken);
-
-                            const qR = Math.round(dR / 20) * 20;
-                            const qG = Math.round(dG / 20) * 20;
-                            const qB = Math.round(dB / 20) * 20;
-                            const key = `${qR},${qG},${qB}`;
-
-                            colorCounts[key] = (colorCounts[key] || 0) + 1;
-                            if (colorCounts[key] > maxCount) {
-                                maxCount = colorCounts[key];
-                                dominant = `rgb(${dR},${dG},${dB})`;
-                            }
-                        }
-
-                        if (dominant.startsWith("rgb")) {
-                            const rgbParts = dominant.match(/\d+/g);
-                            if (rgbParts && rgbParts.length === 3) {
-                                const hex =
-                                    "#" +
-                                    rgbParts
-                                        .map((x) =>
-                                            parseInt(x)
-                                                .toString(16)
-                                                .padStart(2, "0"),
-                                        )
-                                        .join("");
-                                resolve({ ...party, color: hex });
-                                return;
-                            }
-                        }
-                        resolve({ ...party, color: dominant });
-                    } catch (e) {
-                        resolve(party);
-                    }
-                };
-                img.onerror = () => resolve(party);
-            });
-        }),
-    );
-};
+export type { PartyData };
+export { mockData, extractPartyColors };
 
 export default function PartyClustering({
     initialData = mockData,
@@ -484,14 +301,14 @@ export default function PartyClustering({
                                     {tooltipInfo.data.metrics.attendanceRate}%
                                 </span>
                             </div>
-                            <div className="flex justify-between items-start gap-2">
+                            {/*<div className="flex justify-between items-start gap-2">
                                 <span className="font-medium shrink-0">
                                     พฤติกรรมการ Vote:
                                 </span>
                                 <span className="text-right text-slate-800">
                                     {tooltipInfo.data.metrics.votingAlignment}
                                 </span>
-                            </div>
+                            </div>*/}
                         </div>
 
                         {/* Triangle pointer */}
