@@ -58,6 +58,8 @@ export default function CommentSection({
     onPartyChange,
 }: CommentSectionProps = {}) {
     const [localPartyId, setLocalPartyId] = useState<string>("p1");
+    const [comments, setComments] = useState<Comment[]>(mockComments);
+    const [newCommentText, setNewCommentText] = useState("");
 
     const activePartyId =
         propPartyId !== undefined ? propPartyId : localPartyId;
@@ -70,8 +72,24 @@ export default function CommentSection({
         }
     };
 
+    const handleAddComment = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newCommentText.trim()) return;
+
+        const newComment: Comment = {
+            id: `c${Date.now()}`,
+            partyId: activePartyId,
+            author: "ผู้ใช้งาน",
+            date: new Date().toISOString(),
+            text: newCommentText,
+        };
+
+        setComments([newComment, ...comments]);
+        setNewCommentText("");
+    };
+
     // Filter and sort comments by date (newest first)
-    const filteredComments = mockComments
+    const filteredComments = comments
         .filter((c) => c.partyId === activePartyId)
         .sort(
             (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
@@ -105,7 +123,7 @@ export default function CommentSection({
                     <select
                         value={activePartyId}
                         onChange={handlePartyChange}
-                        className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-colors"
+                        className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-colors cursor-pointer"
                     >
                         {parties.map((party) => (
                             <option key={party.id} value={party.id}>
@@ -115,6 +133,27 @@ export default function CommentSection({
                     </select>
                 </div>
             </div>
+
+            <form onSubmit={handleAddComment} className="mb-8">
+                <div className="flex flex-col gap-3">
+                    <textarea
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        placeholder="อยากฝากอะไรถึงพรรคนี้..."
+                        className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-3 outline-none transition-colors resize-none h-24"
+                        required
+                    />
+                    <div className="flex justify-end">
+                        <button
+                            type="submit"
+                            disabled={!newCommentText.trim()}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                        >
+                            ส่งความคิดเห็น
+                        </button>
+                    </div>
+                </div>
+            </form>
 
             <div className="space-y-4">
                 {filteredComments.length > 0 ? (

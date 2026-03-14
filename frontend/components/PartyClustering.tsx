@@ -10,7 +10,14 @@ interface PartyData {
     color: string;
     scoreX: number;
     scoreY: number;
-    size: number;
+    logoUrl: string;
+    metrics: {
+        billTypes: string;
+        unity: number;
+        successRate: number;
+        attendanceRate: number;
+        votingAlignment: string;
+    };
 }
 
 const mockData: PartyData[] = [
@@ -21,7 +28,14 @@ const mockData: PartyData[] = [
         color: "#ef4444",
         scoreX: 20,
         scoreY: 80,
-        size: 40,
+        logoUrl: "/partys/party_1.jpg",
+        metrics: {
+            billTypes: "เศรษฐกิจ, สังคม",
+            unity: 95,
+            successRate: 40,
+            attendanceRate: 85,
+            votingAlignment: "ฝ่ายรัฐบาล (80%)",
+        },
     },
     {
         id: "p2",
@@ -30,7 +44,14 @@ const mockData: PartyData[] = [
         color: "#f87171",
         scoreX: 30,
         scoreY: 70,
-        size: 25,
+        logoUrl: "/partys/party_2.jpg",
+        metrics: {
+            billTypes: "การศึกษา",
+            unity: 88,
+            successRate: 35,
+            attendanceRate: 78,
+            votingAlignment: "ฝ่ายรัฐบาล (75%)",
+        },
     },
     {
         id: "p3",
@@ -39,7 +60,14 @@ const mockData: PartyData[] = [
         color: "#3b82f6",
         scoreX: 80,
         scoreY: 20,
-        size: 35,
+        logoUrl: "/partys/party_6.jpg",
+        metrics: {
+            billTypes: "สิ่งแวดล้อม, สิทธิมนุษยชน",
+            unity: 92,
+            successRate: 20,
+            attendanceRate: 90,
+            votingAlignment: "ฝ่ายค้าน (90%)",
+        },
     },
     {
         id: "p4",
@@ -48,7 +76,14 @@ const mockData: PartyData[] = [
         color: "#60a5fa",
         scoreX: 70,
         scoreY: 30,
-        size: 20,
+        logoUrl: "/partys/party_7.jpg",
+        metrics: {
+            billTypes: "กระจายอำนาจ",
+            unity: 85,
+            successRate: 15,
+            attendanceRate: 82,
+            votingAlignment: "ฝ่ายค้าน (85%)",
+        },
     },
     {
         id: "p5",
@@ -57,28 +92,45 @@ const mockData: PartyData[] = [
         color: "#10b981",
         scoreX: 50,
         scoreY: 50,
-        size: 30,
+        logoUrl: "/partys/party_8.jpg",
+        metrics: {
+            billTypes: "สวัสดิการ",
+            unity: 75,
+            successRate: 50,
+            attendanceRate: 70,
+            votingAlignment: "สวิงโหวต",
+        },
     },
 ];
 
 export default function PartyClustering() {
     const svgRef = useRef<SVGSVGElement>(null);
-    const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
+
+    // Tooltip state
+    const [tooltipInfo, setTooltipInfo] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        data: PartyData | null;
+    }>({ visible: false, x: 0, y: 0, data: null });
 
     useEffect(() => {
         if (!svgRef.current) return;
 
         const { width, height } = dimensions;
-        const margin = { top: 60, right: 60, bottom: 60, left: 60 };
+        const margin = { top: 60, right: 100, bottom: 60, left: 60 };
         const innerWidth = width - margin.left - margin.right;
         const innerHeight = height - margin.top - margin.bottom;
 
         const svg = d3.select(svgRef.current);
-        svg.selectAll("*").remove(); // Clear previous render
+        svg.selectAll("*").remove();
 
         const g = svg
-            .attr("width", width)
-            .attr("height", height)
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("width", "100%")
+            .attr("height", "100%")
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -110,11 +162,11 @@ export default function PartyClustering() {
                 .transition()
                 .duration(1200)
                 .ease(d3.easeBounceOut)
-                .attr("r", 90);
+                .attr("r", 110);
 
             g.append("text")
                 .attr("x", xScale(centerX))
-                .attr("y", yScale(centerY) - 100)
+                .attr("y", yScale(centerY) - 120)
                 .attr("text-anchor", "middle")
                 .attr("fill", "#64748b")
                 .attr("font-size", "14px")
@@ -126,6 +178,8 @@ export default function PartyClustering() {
                 .attr("opacity", 1);
         });
 
+        const nodeRadius = 25; // Fixed size for all parties
+
         // Draw parties
         const nodes = g
             .selectAll(".node")
@@ -136,28 +190,80 @@ export default function PartyClustering() {
             .attr(
                 "transform",
                 (d) => `translate(${xScale(d.scoreX)},${yScale(d.scoreY)})`,
-            );
+            )
+            .style("cursor", "pointer")
+            .on("mouseover", (event, d) => {
+                const [x, y] = d3.pointer(event, containerRef.current);
+                setTooltipInfo({
+                    visible: true,
+                    x: x,
+                    y: y,
+                    data: d,
+                });
+                d3.select(event.currentTarget)
+                    .select("circle")
+                    .transition()
+                    .duration(200)
+                    .attr("stroke-width", 4)
+                    .attr("r", nodeRadius + 5);
+            })
+            .on("mousemove", (event) => {
+                const [x, y] = d3.pointer(event, containerRef.current);
+                setTooltipInfo((prev) => ({ ...prev, x, y }));
+            })
+            .on("mouseout", (event) => {
+                setTooltipInfo((prev) => ({ ...prev, visible: false }));
+                d3.select(event.currentTarget)
+                    .select("circle")
+                    .transition()
+                    .duration(200)
+                    .attr("stroke-width", 2)
+                    .attr("r", nodeRadius);
+            });
+
+        // Add defs for clip path
+        const defs = g.append("defs");
+        nodes.each(function (d, i) {
+            defs.append("clipPath")
+                .attr("id", `clip-${d.id}`)
+                .append("circle")
+                .attr("r", nodeRadius);
+        });
 
         nodes
             .append("circle")
             .attr("r", 0)
-            .attr("fill", (d) => d.color)
-            .attr("stroke", "#fff")
+            .attr("fill", "#fff")
+            .attr("stroke", (d) => d.color)
             .attr("stroke-width", 2)
             .style("filter", "drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))")
             .transition()
             .delay((d, i) => 800 + i * 150)
             .duration(1200)
             .ease(d3.easeElasticOut)
-            .attr("r", (d) => d.size);
+            .attr("r", nodeRadius);
+
+        nodes
+            .append("image")
+            .attr("href", (d) => d.logoUrl)
+            .attr("x", -nodeRadius)
+            .attr("y", -nodeRadius)
+            .attr("width", nodeRadius * 2)
+            .attr("height", nodeRadius * 2)
+            .attr("clip-path", (d) => `url(#clip-${d.id})`)
+            .attr("opacity", 0)
+            .transition()
+            .delay((d, i) => 1200 + i * 150)
+            .duration(600)
+            .attr("opacity", 1);
 
         nodes
             .append("text")
             .attr("text-anchor", "middle")
-            .attr("dy", "0.3em")
-            .attr("fill", "#fff")
+            .attr("y", nodeRadius + 18)
+            .attr("fill", "#334155")
             .attr("font-size", "12px")
-            .attr("font-weight", "500")
+            .attr("font-weight", "600")
             .text((d) => d.name)
             .attr("opacity", 0)
             .transition()
@@ -169,7 +275,7 @@ export default function PartyClustering() {
         const legend = g
             .append("g")
             .attr("class", "legend")
-            .attr("transform", `translate(${innerWidth - 80}, 0)`);
+            .attr("transform", `translate(${innerWidth + 20}, 0)`);
 
         clusters.forEach(([clusterId, parties], i) => {
             const legendRow = legend
@@ -203,7 +309,7 @@ export default function PartyClustering() {
     }, [dimensions]);
 
     return (
-        <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative">
             <div className="mb-6">
                 <h2 className="text-2xl font-bold text-slate-800 mb-2">
                     Party Clustering
@@ -213,8 +319,86 @@ export default function PartyClustering() {
                     Clustering ตาม Score ที่เรากำหนด
                 </p>
             </div>
-            <div className="flex justify-center items-center overflow-x-auto">
-                <svg ref={svgRef} className="max-w-full h-auto"></svg>
+            <div
+                ref={containerRef}
+                className="flex justify-center items-center overflow-x-auto relative"
+            >
+                <svg
+                    ref={svgRef}
+                    className="max-w-full h-auto"
+                    style={{ minHeight: "500px" }}
+                ></svg>
+
+                {/* Tooltip overlay */}
+                {tooltipInfo.visible && tooltipInfo.data && (
+                    <div
+                        className="absolute z-10 bg-white p-4 rounded-xl shadow-lg border border-slate-200 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-4 w-80 transition-opacity duration-200"
+                        style={{
+                            left: tooltipInfo.x,
+                            top: tooltipInfo.y - 15,
+                        }}
+                    >
+                        <div className="flex items-center gap-3 mb-3 border-b border-slate-100 pb-2">
+                            <img
+                                src={tooltipInfo.data.logoUrl}
+                                alt={tooltipInfo.data.name}
+                                className="w-8 h-8 rounded-full border border-slate-200"
+                            />
+                            <h4
+                                className="font-bold text-slate-800"
+                                style={{ color: tooltipInfo.data.color }}
+                            >
+                                {tooltipInfo.data.name}
+                            </h4>
+                        </div>
+
+                        <div className="space-y-2 text-sm text-slate-600">
+                            <div className="flex justify-between items-start gap-2">
+                                <span className="font-medium shrink-0">
+                                    ประเภทร่างกฎหมาย:
+                                </span>
+                                <span className="text-right text-slate-800">
+                                    {tooltipInfo.data.metrics.billTypes}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="font-medium">
+                                    ความเป็นเอกภาพ:
+                                </span>
+                                <span className="text-slate-800">
+                                    {tooltipInfo.data.metrics.unity}%
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="font-medium">
+                                    อัตราร่างกฎหมายสำเร็จ:
+                                </span>
+                                <span className="text-slate-800">
+                                    {tooltipInfo.data.metrics.successRate}%
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="font-medium">
+                                    อัตราการมาลงมติ:
+                                </span>
+                                <span className="text-slate-800">
+                                    {tooltipInfo.data.metrics.attendanceRate}%
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-start gap-2">
+                                <span className="font-medium shrink-0">
+                                    พฤติกรรมการ Vote:
+                                </span>
+                                <span className="text-right text-slate-800">
+                                    {tooltipInfo.data.metrics.votingAlignment}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Triangle pointer */}
+                        <div className="absolute w-3 h-3 bg-white border-b border-r border-slate-200 transform rotate-45 left-1/2 -bottom-1.5 -translate-x-1/2"></div>
+                    </div>
+                )}
             </div>
         </section>
     );

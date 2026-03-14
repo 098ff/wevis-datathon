@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 
 interface YearData {
@@ -64,17 +64,44 @@ const mockData: PartyPerformance[] = [
     },
 ];
 
-const metricLabels = {
+const metricLabels: Record<string, string> = {
     votes: "จำนวนครั้งการลงมติ",
     multitask: "จำนวนครั้งการ Multi-task",
     passedLaws: "จำนวนกฎหมายที่ร่างสำเร็จ",
 };
 
+// Define opacities for visual distinction
+const metricOpacities: Record<string, number> = {
+    votes: 1,
+    multitask: 0.6,
+    passedLaws: 0.3,
+};
+
+interface TooltipInfo {
+    visible: boolean;
+    x: number;
+    y: number;
+    year: string;
+    metricKey: string;
+    value: number;
+    color: string;
+}
+
 const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
     const svgRef = useRef<SVGSVGElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [tooltip, setTooltip] = useState<TooltipInfo>({
+        visible: false,
+        x: 0,
+        y: 0,
+        year: "",
+        metricKey: "",
+        value: 0,
+        color: "",
+    });
 
     useEffect(() => {
-        if (!svgRef.current) return;
+        if (!svgRef.current || !containerRef.current) return;
 
         const margin = { top: 20, right: 20, bottom: 30, left: 40 };
         const width = 320 - margin.left - margin.right;
@@ -106,11 +133,10 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             .style("fill", "#64748b")
             .style("font-size", "12px");
 
-        // Find max total value across all years to scale Y axis appropriately
         const maxVal =
             d3.max(party.data, (d) => d.votes + d.multitask + d.passedLaws) ||
             100;
-        const yMax = Math.ceil(maxVal / 10) * 10; // Round up to nearest 10
+        const yMax = Math.ceil(maxVal / 10) * 10;
 
         const y = d3.scaleLinear().domain([0, yMax]).range([height, 0]);
 
@@ -121,18 +147,6 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             .style("fill", "#64748b")
             .style("font-size", "12px");
 
-        // Create 3 shades of the party color for the 3 segments
-        const baseColor = d3.color(party.color) || d3.color("#cbd5e1")!;
-        const colorScale = d3
-            .scaleOrdinal<string>()
-            .domain(subgroups)
-            .range([
-                baseColor.formatHex(), // Votes (Base)
-                baseColor.brighter(0.8).formatHex(), // Multi-task (Lighter)
-                baseColor.brighter(1.6).formatHex(), // Passed Laws (Lightest)
-            ]);
-
-        // @ts-ignore - d3 types for stack are sometimes tricky with specific interfaces
         const stackedData = d3.stack<YearData>().keys(subgroups)(party.data);
 
         const rects = g
@@ -141,7 +155,8 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             .data(stackedData)
             .enter()
             .append("g")
-            .attr("fill", (d) => colorScale(d.key))
+            .attr("fill", party.color)
+            .attr("fill-opacity", (d) => metricOpacities[d.key])
             .selectAll("rect")
             .data((d) => d)
             .enter()
@@ -150,7 +165,45 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             .attr("y", y(0))
             .attr("height", 0)
             .attr("width", x.bandwidth())
-            .attr("rx", 2);
+            .attr("rx", 2)
+            .style("cursor", "pointer");
+
+        // Hover interactions
+        rects
+            .on("mouseover", function (event, d) {
+                const parentData = d3
+                    .select((this as SVGElement).parentNode as SVGGElement)
+                    .datum() as { key: string };
+                const key = parentData.key;
+
+                d3.select(this)
+                    .transition()
+                    .duration(150)
+                    .attr("stroke", "#334155")
+                    .attr("stroke-width", 2);
+
+                const [xPos, yPos] = d3.pointer(event, containerRef.current);
+                setTooltip({
+                    visible: true,
+                    x: xPos,
+                    y: yPos,
+                    year: d.data.year,
+                    metricKey: key,
+                    value: d.data[key as keyof YearData] as number,
+                    color: party.color,
+                });
+            })
+            .on("mousemove", function (event) {
+                const [xPos, yPos] = d3.pointer(event, containerRef.current);
+                setTooltip((prev) => ({ ...prev, x: xPos, y: yPos }));
+            })
+            .on("mouseout", function () {
+                d3.select(this)
+                    .transition()
+                    .duration(150)
+                    .attr("stroke", "none");
+                setTooltip((prev) => ({ ...prev, visible: false }));
+            });
 
         rects
             .transition()
@@ -162,7 +215,10 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
     }, [party]);
 
     return (
-        <div className="flex flex-col items-center bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+        <div
+            ref={containerRef}
+            className="flex flex-col items-center bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative"
+        >
             <h4
                 className="font-bold text-lg mb-4"
                 style={{ color: party.color }}
@@ -172,6 +228,42 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             <div className="w-full max-w-[320px]">
                 <svg ref={svgRef} className="w-full h-auto"></svg>
             </div>
+
+            {/* Tooltip Overlay */}
+            {tooltip.visible && (
+                <div
+                    className="absolute z-20 bg-slate-800 text-white p-3 rounded-lg shadow-xl pointer-events-none transform -translate-x-1/2 -translate-y-full w-48 transition-opacity duration-150"
+                    style={{
+                        left: tooltip.x,
+                        top: tooltip.y - 10,
+                    }}
+                >
+                    <div className="text-center">
+                        <div className="text-xs text-slate-300 mb-1 font-medium tracking-wider">
+                            {tooltip.year}
+                        </div>
+                        <div className="text-sm font-light mb-1">
+                            {metricLabels[tooltip.metricKey]}
+                        </div>
+                        <div className="text-xl font-bold flex items-center justify-center gap-2">
+                            <span
+                                className="w-3 h-3 rounded-full inline-block"
+                                style={{
+                                    backgroundColor: tooltip.color,
+                                    opacity: metricOpacities[tooltip.metricKey],
+                                    border: "1px solid rgba(255,255,255,0.2)",
+                                }}
+                            ></span>
+                            {tooltip.value}{" "}
+                            <span className="text-sm font-normal text-slate-300">
+                                ครั้ง/ฉบับ
+                            </span>
+                        </div>
+                    </div>
+                    {/* Triangle Pointer */}
+                    <div className="absolute w-3 h-3 bg-slate-800 transform rotate-45 left-1/2 -bottom-1.5 -translate-x-1/2"></div>
+                </div>
+            )}
         </div>
     );
 };
@@ -186,13 +278,10 @@ export default function StackedBarChart({
     const selectedParty =
         mockData.find((p) => p.id === selectedPartyId) || mockData[0];
 
-    // Top 3 parties (excluding the currently selected one to show variety, or just statically the top 3 overall)
-    // For this example, we'll just take p2, p3, p4 as the "Top 3" defaults.
     const top3Parties = mockData
         .filter((p) => p.id !== selectedParty.id)
         .slice(0, 3);
 
-    // Fallback if we don't have enough data
     while (top3Parties.length < 3 && mockData.length >= 3) {
         const remaining = mockData.find(
             (p) => !top3Parties.includes(p) && p.id !== selectedParty.id,
@@ -212,25 +301,44 @@ export default function StackedBarChart({
                         เปรียบเทียบผลงานตลอด 1 วาระ (4 ปี) ของพรรคที่คุณสนใจ
                         เทียบกับ 3 พรรคที่ทำผลงานได้ดีที่สุด
                         เพื่อให้เห็นภาพรวมและ Insight ที่ลึกขึ้น
+                        (ชี้ที่กราฟเพื่อดูข้อมูล)
                     </p>
                 </div>
 
-                {/* Legend */}
+                {/* Legend - Dynamically matches selected party color for clearer context */}
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm self-start shrink-0">
                     <h4 className="text-sm font-semibold text-slate-700 mb-3">
-                        สัดส่วนข้อมูล (ไล่สีจากเข้มไปอ่อน)
+                        สัดส่วนข้อมูล (อ้างอิงสีตามพรรค)
                     </h4>
                     <ul className="space-y-2 text-sm text-slate-600">
                         <li className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded bg-slate-800"></div>
+                            <div
+                                className="w-4 h-4 rounded"
+                                style={{
+                                    backgroundColor: selectedParty.color,
+                                    opacity: metricOpacities.votes,
+                                }}
+                            ></div>
                             <span>{metricLabels.votes}</span>
                         </li>
                         <li className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded bg-slate-500"></div>
+                            <div
+                                className="w-4 h-4 rounded"
+                                style={{
+                                    backgroundColor: selectedParty.color,
+                                    opacity: metricOpacities.multitask,
+                                }}
+                            ></div>
                             <span>{metricLabels.multitask}</span>
                         </li>
                         <li className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded bg-slate-300"></div>
+                            <div
+                                className="w-4 h-4 rounded"
+                                style={{
+                                    backgroundColor: selectedParty.color,
+                                    opacity: metricOpacities.passedLaws,
+                                }}
+                            ></div>
                             <span>{metricLabels.passedLaws}</span>
                         </li>
                     </ul>

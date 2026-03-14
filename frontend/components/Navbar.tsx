@@ -49,7 +49,7 @@ export default function Navbar() {
                     onClick={(e) => handleClick(e, "body")}
                     className="font-extrabold text-xl text-slate-900 tracking-tight"
                 >
-                    Party<span className="text-blue-600">Data</span>
+                    พรรค<span className="text-blue-600">teristic</span>
                 </a>
                 <ul className="hidden md:flex gap-8 items-center">
                     {navItems.map((item) => (

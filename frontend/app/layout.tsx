@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Sarabun } from "next/font/google";
+import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 
-const sarabun = Sarabun({
+const IBM = IBM_Plex_Sans({
     weight: ["300", "400", "500", "600", "700"],
-    subsets: ["latin", "thai"],
-    variable: "--font-sarabun",
+    subsets: ["latin"],
+    variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default function RootLayout({
     return (
         <html lang="th">
             <body
-                className={`${sarabun.variable} font-sans antialiased bg-slate-50 text-slate-900`}
+                className={`${IBM.variable} font-sans antialiased bg-slate-50 text-slate-900`}
             >
                 {children}
             </body>
