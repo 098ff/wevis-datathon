@@ -3,14 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { PartyData } from "../types";
-import { partyClusteringData as mockData } from "../data/mockData";
 import { extractPartyColors } from "../utils/colors";
 
 export type { PartyData };
-export { mockData, extractPartyColors };
+export { extractPartyColors };
 
 export default function PartyClustering({
-    initialData = mockData,
+    initialData = [],
 }: {
     initialData?: PartyData[];
 }) {

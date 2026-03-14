@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import * as d3 from "d3";
-import { YearData, PartyPerformance, PartyData } from "../types";
-import { stackedBarChartData as mockData } from "../data/mockData";
+import { YearData, PartyData } from "../types";
+import { getPartyPerformance } from "../apis/parties";
+import { PartyPerformanceDTO } from "../types/dto";
 
 const metricLabels: Record<string, string> = {
     votes: "จำนวนครั้งการลงมติ",
@@ -27,7 +28,7 @@ interface TooltipInfo {
     value: number;
 }
 
-const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
+const StackedBarGroup = ({ party }: { party: PartyPerformanceDTO }) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [tooltip, setTooltip] = useState<TooltipInfo>({
@@ -223,31 +224,43 @@ export default function StackedBarChart({
     selectedPartyId = "p1",
     globalPartyData = [],
 }: StackedBarChartProps = {}) {
+    const [performanceData, setPerformanceData] = useState<PartyPerformanceDTO[]>([]);
+
+    useEffect(() => {
+        getPartyPerformance().then(setPerformanceData).catch(err => console.error("Failed to load performance data", err));
+    }, []);
+
     // Map the global color back to our mock performance data
     const getPartyColor = (id: string, fallback: string) => {
         const p = globalPartyData.find((gp) => gp.id === id);
         return p ? p.color : fallback;
     };
 
-    const enhancedMockData = mockData.map((p) => ({
-        ...p,
-        color: getPartyColor(p.id, p.color),
-    }));
+    const enhancedData = useMemo(() => {
+        return performanceData.map((p) => ({
+            ...p,
+            color: getPartyColor(p.id, p.color),
+        }));
+    }, [performanceData, globalPartyData]);
 
     const selectedParty =
-        enhancedMockData.find((p) => p.id === selectedPartyId) ||
-        enhancedMockData[0];
+        enhancedData.find((p) => p.id === selectedPartyId) ||
+        enhancedData[0];
 
-    const top3Parties = enhancedMockData
-        .filter((p) => p.id !== selectedParty.id)
+    const top3Parties: PartyPerformanceDTO[] = enhancedData
+        .filter((p) => p.id !== selectedParty?.id)
         .slice(0, 3);
 
-    while (top3Parties.length < 3 && enhancedMockData.length >= 3) {
-        const remaining = enhancedMockData.find(
-            (p) => !top3Parties.includes(p) && p.id !== selectedParty.id,
+    while (top3Parties.length < 3 && enhancedData.length >= 3) {
+        const remaining = enhancedData.find(
+            (p) => !top3Parties.includes(p) && p.id !== selectedParty?.id,
         );
         if (remaining) top3Parties.push(remaining);
         else break;
+    }
+
+    if (enhancedData.length === 0 || !selectedParty) {
+        return <div className="mt-8 p-12 bg-slate-50 rounded-3xl border border-slate-200 flex justify-center text-slate-400 animate-pulse">กำลังโหลดข้อมูล...</div>;
     }
 
     return (

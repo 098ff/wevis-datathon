@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import PartyClustering from "@/components/PartyClustering";
 import { extractPartyColors } from "@/utils/colors";
-import { partyClusteringData as partyMockData } from "@/data/mockData";
+import { getPartyClustering } from "@/apis/parties";
 import { PartyData } from "@/types";
 import SpiderChart from "@/components/SpiderChart";
 import StackedBarChart from "@/components/StackedBarChart";
@@ -13,16 +13,21 @@ import CommentSection from "@/components/CommentSection";
 
 export default function Home() {
     const [selectedPartyId, setSelectedPartyId] = useState("p1");
-    const [globalPartyData, setGlobalPartyData] =
-        useState<PartyData[]>(partyMockData);
+    const [globalPartyData, setGlobalPartyData] = useState<PartyData[]>([]);
 
     useEffect(() => {
         let isMounted = true;
-        extractPartyColors(partyMockData).then((updated) => {
-            if (isMounted) {
-                setGlobalPartyData(updated);
-            }
-        });
+        getPartyClustering().then(data => {
+            if (!isMounted) return;
+            extractPartyColors(data).then((updated) => {
+                if (isMounted) {
+                    setGlobalPartyData(updated);
+                    if (updated.length > 0) {
+                        setSelectedPartyId(updated[0].id);
+                    }
+                }
+            });
+        }).catch(err => console.error("Failed to load clustering data", err));
         return () => {
             isMounted = false;
         };
@@ -63,6 +68,7 @@ export default function Home() {
                         <SpiderChart
                             selectedPartyId={selectedPartyId}
                             onPartyChange={setSelectedPartyId}
+                            globalPartyData={globalPartyData}
                         />
                     </div>
                     <div id="performance">
@@ -75,6 +81,7 @@ export default function Home() {
                         <CommentSection
                             selectedPartyId={selectedPartyId}
                             onPartyChange={setSelectedPartyId}
+                            globalPartyData={globalPartyData}
                         />
                     </div>
                 </div>

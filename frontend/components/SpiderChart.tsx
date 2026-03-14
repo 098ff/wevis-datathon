@@ -28,28 +28,53 @@ function AnimatedNumber({
     return <motion.span>{display}</motion.span>;
 }
 
-import { Metric, PartyDetail } from "../types";
-import { spiderChartData as mockParties } from "../data/mockData";
+import { Metric, PartyData } from "../types";
+import { getPartySpider } from "../apis/parties";
+import { PartySpiderDTO } from "../types/dto";
 
 interface SpiderChartProps {
     selectedPartyId?: string;
     onPartyChange?: (id: string) => void;
+    globalPartyData?: PartyData[];
 }
 
 export default function SpiderChart({
     selectedPartyId: propPartyId,
     onPartyChange,
+    globalPartyData = [],
 }: SpiderChartProps = {}) {
     const svgContainerRef = useRef<HTMLDivElement>(null);
-    const [localPartyId, setLocalPartyId] = useState<string>(mockParties[0].id);
+    const [spiderData, setSpiderData] = useState<PartySpiderDTO[]>([]);
+    const [localPartyId, setLocalPartyId] = useState<string>("");
     const [activeIdx, setActiveIdx] = useState<number | null>(null);
 
-    const activePartyId =
-        propPartyId !== undefined ? propPartyId : localPartyId;
-    const selectedParty =
-        mockParties.find((p) => p.id === activePartyId) || mockParties[0];
+    useEffect(() => {
+        getPartySpider().then(data => {
+            setSpiderData(data);
+            if (data.length > 0 && !localPartyId) {
+                setLocalPartyId(data[0].id);
+            }
+        }).catch(err => console.error("Failed to load spider data", err));
+    }, []);
+
+    const activePartyId = propPartyId !== undefined ? propPartyId : localPartyId;
+
+    const getPartyColor = (id: string, fallback: string) => {
+        const p = globalPartyData.find((gp) => gp.id === id);
+        return p ? p.color : fallback;
+    };
+
+    const enhancedParties = useMemo(() => {
+        return spiderData.map(p => ({
+            ...p,
+            color: getPartyColor(p.id, p.color)
+        }));
+    }, [spiderData, globalPartyData]);
+
+    const selectedParty = enhancedParties.find((p) => p.id === activePartyId) || enhancedParties[0];
 
     const totalBills = useMemo(() => {
+        if (!selectedParty) return 0;
         return selectedParty.metrics.reduce((acc, m) => acc + m.bills, 0);
     }, [selectedParty]);
 
@@ -66,13 +91,15 @@ export default function SpiderChart({
     const center = size / 2;
     const margin = 60;
     const radius = center - margin;
-    const features = selectedParty.metrics.map((m) => m.axis);
-    const angleSlice = (Math.PI * 2) / features.length;
+    const features = selectedParty ? selectedParty.metrics.map((m) => m.axis) : [];
+    const angleSlice = features.length > 0 ? (Math.PI * 2) / features.length : 0;
 
     // Calculate Coordinates for the Polygon and Points
     const points = useMemo(() => {
+        if (!selectedParty) return [];
         return selectedParty.metrics.map((m, i) => {
-            const r = (m.value / 100) * radius;
+            const cappedValue = Math.min(m.value, 100);
+            const r = (cappedValue / 100) * radius;
             const x = center + r * Math.cos(angleSlice * i - Math.PI / 2);
             const y = center + r * Math.sin(angleSlice * i - Math.PI / 2);
             return { x, y, value: m.value, axis: m.axis, bills: m.bills };
@@ -113,6 +140,11 @@ export default function SpiderChart({
         [points],
     );
 
+    // Show loading if pending
+    if (enhancedParties.length === 0 || !selectedParty) {
+        return <div className="h-[450px] bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 animate-pulse">กำลังโหลดข้อมูล...</div>;
+    }
+
     return (
         <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-8 items-start relative">
             <div className="flex-1 w-full z-10">
@@ -138,7 +170,7 @@ export default function SpiderChart({
                             onChange={handlePartyChange}
                             className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-colors cursor-pointer"
                         >
-                            {mockParties.map((party) => (
+                            {enhancedParties.map((party) => (
                                 <option key={party.id} value={party.id}>
                                     {party.name}
                                 </option>

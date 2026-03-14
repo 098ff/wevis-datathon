@@ -1,25 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageSquare, User } from "lucide-react";
-import { Comment } from "../types";
-import {
-    commentsData as mockComments,
-    availableParties as parties,
-} from "../data/mockData";
+import { PartyData } from "../types";
+import { CommentDTO } from "../types/dto";
+import { getComments } from "../apis/comments";
 
 interface CommentSectionProps {
     selectedPartyId?: string;
     onPartyChange?: (id: string) => void;
+    globalPartyData?: PartyData[];
 }
 
 export default function CommentSection({
     selectedPartyId: propPartyId,
     onPartyChange,
+    globalPartyData = [],
 }: CommentSectionProps = {}) {
-    const [localPartyId, setLocalPartyId] = useState<string>("p1");
-    const [comments, setComments] = useState<Comment[]>(mockComments);
+    const [localPartyId, setLocalPartyId] = useState<string>("");
+    const [comments, setComments] = useState<CommentDTO[]>([]);
     const [newCommentText, setNewCommentText] = useState("");
+
+    useEffect(() => {
+        getComments().then(data => {
+            setComments(data);
+            if (data.length > 0 && !localPartyId && propPartyId === undefined) {
+                setLocalPartyId(data[0].partyId);
+            }
+        }).catch(err => console.error("Failed to load comments", err));
+    }, []);
 
     const activePartyId =
         propPartyId !== undefined ? propPartyId : localPartyId;
@@ -36,7 +45,7 @@ export default function CommentSection({
         e.preventDefault();
         if (!newCommentText.trim()) return;
 
-        const newComment: Comment = {
+        const newComment: CommentDTO = {
             id: `c${Date.now()}`,
             partyId: activePartyId,
             author: "ผู้ใช้งาน",
@@ -85,7 +94,7 @@ export default function CommentSection({
                         onChange={handlePartyChange}
                         className="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-colors cursor-pointer"
                     >
-                        {parties.map((party) => (
+                        {globalPartyData.map((party) => (
                             <option key={party.id} value={party.id}>
                                 {party.name}
                             </option>

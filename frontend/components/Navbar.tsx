@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 const navItems = [
-    { name: "Overview", href: "#clustering" },
     { name: "Characteristics", href: "#characteristics" },
     { name: "Performance", href: "#performance" },
     { name: "Comments", href: "#comments" },
