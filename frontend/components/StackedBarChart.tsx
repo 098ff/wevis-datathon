@@ -14,6 +14,7 @@ interface PartyPerformance {
     id: string;
     name: string;
     color: string;
+    logoUrl: string;
     data: YearData[];
 }
 
@@ -22,6 +23,7 @@ const mockData: PartyPerformance[] = [
         id: "p1",
         name: "พรรค A",
         color: "#ef4444",
+        logoUrl: "/partys/party_1.jpg",
         data: [
             { year: "ปีที่ 1", votes: 30, multitask: 15, passedLaws: 5 },
             { year: "ปีที่ 2", votes: 35, multitask: 20, passedLaws: 8 },
@@ -33,6 +35,7 @@ const mockData: PartyPerformance[] = [
         id: "p2",
         name: "พรรค B",
         color: "#3b82f6",
+        logoUrl: "/partys/party_2.jpg",
         data: [
             { year: "ปีที่ 1", votes: 40, multitask: 10, passedLaws: 8 },
             { year: "ปีที่ 2", votes: 42, multitask: 12, passedLaws: 10 },
@@ -44,6 +47,7 @@ const mockData: PartyPerformance[] = [
         id: "p3",
         name: "พรรค C",
         color: "#10b981",
+        logoUrl: "/partys/party_6.jpg",
         data: [
             { year: "ปีที่ 1", votes: 20, multitask: 25, passedLaws: 4 },
             { year: "ปีที่ 2", votes: 25, multitask: 30, passedLaws: 6 },
@@ -55,6 +59,7 @@ const mockData: PartyPerformance[] = [
         id: "p4",
         name: "พรรค D",
         color: "#f59e0b",
+        logoUrl: "/partys/party_7.jpg",
         data: [
             { year: "ปีที่ 1", votes: 35, multitask: 20, passedLaws: 10 },
             { year: "ปีที่ 2", votes: 38, multitask: 22, passedLaws: 12 },
@@ -66,15 +71,15 @@ const mockData: PartyPerformance[] = [
 
 const metricLabels: Record<string, string> = {
     votes: "จำนวนครั้งการลงมติ",
-    multitask: "จำนวนครั้งการ Multi-task",
-    passedLaws: "จำนวนกฎหมายที่ร่างสำเร็จ",
+    multitask: "ภาระหน้าที่ฝ่ายบริหาร",
+    passedLaws: "จำนวนกฎหมายที่เสนอและผ่าน",
 };
 
-// Define opacities for visual distinction
-const metricOpacities: Record<string, number> = {
-    votes: 1,
-    multitask: 0.6,
-    passedLaws: 0.3,
+// Fixed colors per metric across all bars
+const metricColors: Record<string, string> = {
+    votes: "#6366f1", // Indigo
+    multitask: "#14b8a6", // Teal
+    passedLaws: "#f59e0b", // Amber
 };
 
 interface TooltipInfo {
@@ -84,7 +89,6 @@ interface TooltipInfo {
     year: string;
     metricKey: string;
     value: number;
-    color: string;
 }
 
 const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
@@ -97,7 +101,6 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
         year: "",
         metricKey: "",
         value: 0,
-        color: "",
     });
 
     useEffect(() => {
@@ -155,8 +158,7 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             .data(stackedData)
             .enter()
             .append("g")
-            .attr("fill", party.color)
-            .attr("fill-opacity", (d) => metricOpacities[d.key])
+            .attr("fill", (d) => metricColors[d.key])
             .selectAll("rect")
             .data((d) => d)
             .enter()
@@ -190,7 +192,6 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
                     year: d.data.year,
                     metricKey: key,
                     value: d.data[key as keyof YearData] as number,
-                    color: party.color,
                 });
             })
             .on("mousemove", function (event) {
@@ -219,12 +220,15 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             ref={containerRef}
             className="flex flex-col items-center bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative"
         >
-            <h4
-                className="font-bold text-lg mb-4"
-                style={{ color: party.color }}
-            >
-                {party.name}
-            </h4>
+            <div className="flex flex-col items-center mb-4 gap-2">
+                <img
+                    src={party.logoUrl}
+                    alt={party.name}
+                    className="w-14 h-14 rounded-full border-[3px] shadow-sm object-cover"
+                    style={{ borderColor: party.color }}
+                    title={party.name}
+                />
+            </div>
             <div className="w-full max-w-[320px]">
                 <svg ref={svgRef} className="w-full h-auto"></svg>
             </div>
@@ -249,8 +253,8 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
                             <span
                                 className="w-3 h-3 rounded-full inline-block"
                                 style={{
-                                    backgroundColor: tooltip.color,
-                                    opacity: metricOpacities[tooltip.metricKey],
+                                    backgroundColor:
+                                        metricColors[tooltip.metricKey],
                                     border: "1px solid rgba(255,255,255,0.2)",
                                 }}
                             ></span>
@@ -305,19 +309,16 @@ export default function StackedBarChart({
                     </p>
                 </div>
 
-                {/* Legend - Dynamically matches selected party color for clearer context */}
+                {/* Legend - Fixed Metric Colors */}
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm self-start shrink-0">
                     <h4 className="text-sm font-semibold text-slate-700 mb-3">
-                        สัดส่วนข้อมูล (อ้างอิงสีตามพรรค)
+                        สัดส่วนข้อมูล
                     </h4>
                     <ul className="space-y-2 text-sm text-slate-600">
                         <li className="flex items-center gap-2">
                             <div
                                 className="w-4 h-4 rounded"
-                                style={{
-                                    backgroundColor: selectedParty.color,
-                                    opacity: metricOpacities.votes,
-                                }}
+                                style={{ backgroundColor: metricColors.votes }}
                             ></div>
                             <span>{metricLabels.votes}</span>
                         </li>
@@ -325,8 +326,7 @@ export default function StackedBarChart({
                             <div
                                 className="w-4 h-4 rounded"
                                 style={{
-                                    backgroundColor: selectedParty.color,
-                                    opacity: metricOpacities.multitask,
+                                    backgroundColor: metricColors.multitask,
                                 }}
                             ></div>
                             <span>{metricLabels.multitask}</span>
@@ -335,8 +335,7 @@ export default function StackedBarChart({
                             <div
                                 className="w-4 h-4 rounded"
                                 style={{
-                                    backgroundColor: selectedParty.color,
-                                    opacity: metricOpacities.passedLaws,
+                                    backgroundColor: metricColors.passedLaws,
                                 }}
                             ></div>
                             <span>{metricLabels.passedLaws}</span>

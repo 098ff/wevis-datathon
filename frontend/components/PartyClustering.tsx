@@ -107,6 +107,110 @@ export default function PartyClustering() {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
+    const [partyData, setPartyData] = useState<PartyData[]>(mockData);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const extractColors = async () => {
+            const updated = await Promise.all(
+                mockData.map((party) => {
+                    return new Promise<PartyData>((resolve) => {
+                        const img = new window.Image();
+                        img.crossOrigin = "Anonymous";
+                        img.src = party.logoUrl;
+                        img.onload = () => {
+                            const canvas = document.createElement("canvas");
+                            const ctx = canvas.getContext("2d", {
+                                willReadFrequently: true,
+                            });
+                            if (!ctx) return resolve(party);
+
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            ctx.drawImage(img, 0, 0);
+
+                            try {
+                                const imageData = ctx.getImageData(
+                                    0,
+                                    0,
+                                    canvas.width,
+                                    canvas.height,
+                                );
+                                const data = imageData.data;
+                                const colorCounts: Record<string, number> = {};
+                                let maxCount = 0;
+                                let dominant = party.color;
+
+                                for (let i = 0; i < data.length; i += 4) {
+                                    const r = data[i];
+                                    const g = data[i + 1];
+                                    const b = data[i + 2];
+                                    const a = data[i + 3];
+
+                                    if (a < 128) continue;
+
+                                    // Calculate luminance to aggressively avoid white/light backgrounds
+                                    const luminance =
+                                        0.299 * r + 0.587 * g + 0.114 * b;
+                                    if (luminance > 220) continue;
+
+                                    // Prefer darker shades: artificially lower RGB values for mid-to-light colors
+                                    const darken = luminance > 150 ? 0.75 : 1;
+                                    const dR = Math.floor(r * darken);
+                                    const dG = Math.floor(g * darken);
+                                    const dB = Math.floor(b * darken);
+
+                                    const qR = Math.round(dR / 20) * 20;
+                                    const qG = Math.round(dG / 20) * 20;
+                                    const qB = Math.round(dB / 20) * 20;
+                                    const key = `${qR},${qG},${qB}`;
+
+                                    colorCounts[key] =
+                                        (colorCounts[key] || 0) + 1;
+                                    if (colorCounts[key] > maxCount) {
+                                        maxCount = colorCounts[key];
+                                        dominant = `rgb(${dR},${dG},${dB})`;
+                                    }
+                                }
+
+                                if (dominant.startsWith("rgb")) {
+                                    const rgbParts = dominant.match(/\d+/g);
+                                    if (rgbParts && rgbParts.length === 3) {
+                                        const hex =
+                                            "#" +
+                                            rgbParts
+                                                .map((x) =>
+                                                    parseInt(x)
+                                                        .toString(16)
+                                                        .padStart(2, "0"),
+                                                )
+                                                .join("");
+                                        resolve({ ...party, color: hex });
+                                        return;
+                                    }
+                                }
+                                resolve({ ...party, color: dominant });
+                            } catch (e) {
+                                resolve(party);
+                            }
+                        };
+                        img.onerror = () => resolve(party);
+                    });
+                }),
+            );
+
+            if (isMounted) {
+                setPartyData(updated);
+            }
+        };
+
+        extractColors();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     // Tooltip state
     const [tooltipInfo, setTooltipInfo] = useState<{
@@ -143,7 +247,7 @@ export default function PartyClustering() {
 
         // Draw clusters (background bubbles)
         const clusters = Array.from(
-            d3.group(mockData, (d) => d.cluster).entries(),
+            d3.group(partyData, (d) => d.cluster).entries(),
         );
 
         clusters.forEach(([clusterId, parties]) => {
@@ -183,7 +287,7 @@ export default function PartyClustering() {
         // Draw parties
         const nodes = g
             .selectAll(".node")
-            .data(mockData)
+            .data(partyData)
             .enter()
             .append("g")
             .attr("class", "node")
@@ -204,7 +308,7 @@ export default function PartyClustering() {
                     .select("circle")
                     .transition()
                     .duration(200)
-                    .attr("stroke-width", 4)
+                    .attr("stroke-width", 5)
                     .attr("r", nodeRadius + 5);
             })
             .on("mousemove", (event) => {
@@ -217,7 +321,7 @@ export default function PartyClustering() {
                     .select("circle")
                     .transition()
                     .duration(200)
-                    .attr("stroke-width", 2)
+                    .attr("stroke-width", 3)
                     .attr("r", nodeRadius);
             });
 
@@ -235,7 +339,7 @@ export default function PartyClustering() {
             .attr("r", 0)
             .attr("fill", "#fff")
             .attr("stroke", (d) => d.color)
-            .attr("stroke-width", 2)
+            .attr("stroke-width", 3)
             .style("filter", "drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))")
             .transition()
             .delay((d, i) => 800 + i * 150)
@@ -306,7 +410,7 @@ export default function PartyClustering() {
                 .duration(600)
                 .attr("opacity", 1);
         });
-    }, [dimensions]);
+    }, [dimensions, partyData]);
 
     return (
         <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative">
@@ -321,7 +425,7 @@ export default function PartyClustering() {
             </div>
             <div
                 ref={containerRef}
-                className="flex justify-center items-center overflow-x-auto relative"
+                className="flex justify-center items-center overflow-visible relative"
             >
                 <svg
                     ref={svgRef}
@@ -332,7 +436,7 @@ export default function PartyClustering() {
                 {/* Tooltip overlay */}
                 {tooltipInfo.visible && tooltipInfo.data && (
                     <div
-                        className="absolute z-10 bg-white p-4 rounded-xl shadow-lg border border-slate-200 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-4 w-80 transition-opacity duration-200"
+                        className="absolute z-[100] bg-white p-4 rounded-xl shadow-2xl border border-slate-200 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-4 w-80 transition-opacity duration-200"
                         style={{
                             left: tooltipInfo.x,
                             top: tooltipInfo.y - 15,
@@ -342,7 +446,8 @@ export default function PartyClustering() {
                             <img
                                 src={tooltipInfo.data.logoUrl}
                                 alt={tooltipInfo.data.name}
-                                className="w-8 h-8 rounded-full border border-slate-200"
+                                className="w-8 h-8 rounded-full border-2"
+                                style={{ borderColor: tooltipInfo.data.color }}
                             />
                             <h4
                                 className="font-bold text-slate-800"
