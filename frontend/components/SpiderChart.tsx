@@ -8,11 +8,17 @@ import {
     AnimatePresence,
 } from "framer-motion";
 
-function AnimatedNumber({ value }: { value: number }) {
+function AnimatedNumber({
+    value,
+    suffix = "",
+}: {
+    value: number;
+    suffix?: string;
+}) {
     const spring = useSpring(0, { bounce: 0, duration: 1000 });
     const display = useTransform(
         spring,
-        (current) => Math.round(current) + "%",
+        (current) => Math.round(current) + suffix,
     );
 
     useEffect(() => {
@@ -91,6 +97,10 @@ export default function SpiderChart({
         propPartyId !== undefined ? propPartyId : localPartyId;
     const selectedParty =
         mockParties.find((p) => p.id === activePartyId) || mockParties[0];
+
+    const totalBills = useMemo(() => {
+        return selectedParty.metrics.reduce((acc, m) => acc + m.bills, 0);
+    }, [selectedParty]);
 
     const handlePartyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newId = e.target.value;
@@ -216,12 +226,33 @@ export default function SpiderChart({
                                     >
                                         {metric.axis}
                                     </span>
-                                    <span
-                                        className="font-bold text-lg"
-                                        style={{ color: selectedParty.color }}
-                                    >
-                                        <AnimatedNumber value={metric.value} />
-                                    </span>
+                                    <div className="flex flex-col items-end">
+                                        <span
+                                            className="font-bold text-lg leading-tight"
+                                            style={{
+                                                color: selectedParty.color,
+                                            }}
+                                        >
+                                            <AnimatedNumber
+                                                value={metric.bills}
+                                            />{" "}
+                                            <span className="text-sm font-normal text-slate-500">
+                                                ฉบับ
+                                            </span>
+                                        </span>
+                                        <span className="text-xs text-slate-400 font-medium">
+                                            (
+                                            <AnimatedNumber
+                                                value={Math.round(
+                                                    (metric.bills /
+                                                        totalBills) *
+                                                        100,
+                                                )}
+                                                suffix="%"
+                                            />
+                                            )
+                                        </span>
+                                    </div>
                                 </li>
                             );
                         })}
@@ -365,13 +396,24 @@ export default function SpiderChart({
                                         จำนวนร่างกฎหมายที่เสนอ:
                                     </div>
                                     <div
-                                        className="text-2xl font-bold mt-1 transition-colors duration-800"
+                                        className="text-2xl font-bold mt-1 transition-colors duration-800 flex flex-col items-center"
                                         style={{ color: selectedParty.color }}
                                     >
-                                        {points[activeIdx].bills}{" "}
-                                        <span className="text-sm font-normal text-slate-300">
-                                            ฉบับ
-                                        </span>
+                                        <div>
+                                            {points[activeIdx].bills}{" "}
+                                            <span className="text-sm font-normal text-slate-300">
+                                                ฉบับ
+                                            </span>
+                                        </div>
+                                        <div className="text-xs font-medium text-slate-400 mt-1">
+                                            (คิดเป็น{" "}
+                                            {Math.round(
+                                                (points[activeIdx].bills /
+                                                    totalBills) *
+                                                    100,
+                                            )}
+                                            % ของพรรค)
+                                        </div>
                                     </div>
                                 </div>
                                 {/* Triangle Pointer */}
