@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - FRONTEND_URL=http://localhost:3000
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Pass this during build time for Next.js to bake into the static assets
+        - NEXT_PUBLIC_API_URL=http://localhost:3001/api
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    restart: unless-stopped
+    depends_on:
+      - backend

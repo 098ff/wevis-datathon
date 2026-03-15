@@ -2,7 +2,7 @@ import { parse } from "csv-parse/sync";
 import * as fs from "fs";
 import * as path from "path";
 import type { Party } from "../types/index.js";
-import { party_list } from "../../data/pary_list.js";
+import { party_list } from "../data/pary_list.js";
 
 const dataDir = path.join(process.cwd(), "data");
 
