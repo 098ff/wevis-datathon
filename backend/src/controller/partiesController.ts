@@ -181,13 +181,7 @@ export const getPartiesPerformanceHandler = (req: Request, res: Response) => {
                     votes: baseVotes + 10,
                     multitask: Math.round((baseVotes + 10) * 0.5),
                     passedLaws: Math.round((baseVotes + 10) * 0.2),
-                },
-                {
-                    year: "ปีที่ 4",
-                    votes: baseVotes + 15,
-                    multitask: Math.round((baseVotes + 15) * 0.55),
-                    passedLaws: Math.round((baseVotes + 15) * 0.25),
-                },
+                }
             ],
         };
     });
