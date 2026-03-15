@@ -12,8 +12,12 @@ export interface MetricDTO {
 export interface PartyClusteringDTO {
     id: string;
     name: string;
-    cluster: number;
+    cluster: number | string;
+    pc1: number;
+    pc2: number;
+    pc3: number;
     color: string;
+    clusterColor?: string;
     scoreX: number;
     scoreY: number;
     logoUrl: string;
