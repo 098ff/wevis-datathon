@@ -164,7 +164,6 @@ export default function PartyClustering({
             y: data.y,
             z: data.z,
             color: data.color,
-            // Radius is actual max distance + 6 units of padding to cover billboard curvature and outliers, minimum 8
             radius: Math.max(8, data.maxDist),
         }));
     }, [partyData]);
