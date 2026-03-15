@@ -17,6 +17,24 @@ interface TooltipInfo {
     data: PartyData | null;
 }
 
+function getGroupName(num: number){
+    const nameMapper: Record<number, string> = {
+        0:'พรรคกระแสหลัก',
+        1:'พรรคเล็ก',
+        2:'พรรคเศรษฐกิจ',
+        3:'พรรคทางเลือกเชิงปฏิรูป',
+        4:'พรรคเป็นธรรม',
+        5:'พรรคขนาดเล็กที่มีฐานเฉพาะกลุ่ม',
+        6:'พรรคท้องถิ่น',
+        7:'พรรคฟลุ๊ค',
+        8:'พรรคฐานมวลชนและท้องถิ่น',
+    }
+    if (num in nameMapper) {
+        return nameMapper[num];
+    }
+    return 'พรรคอื่นๆ';
+}
+
 function PartyNode({
     data,
     setTooltipInfo,
@@ -292,7 +310,7 @@ export default function PartyClustering({
                                         className="w-3 h-3 rounded-full shadow-sm" 
                                         style={{ backgroundColor: sampleParty.clusterColor || sampleParty.color }}
                                     />
-                                    <span className="text-sm font-medium text-slate-700">กลุ่มที่ {clusterId}</span>
+                                    <span className="text-sm font-medium text-slate-700">{getGroupName(Number(clusterId))}</span>
                                 </div>
                             );
                         }
@@ -329,7 +347,7 @@ export default function PartyClustering({
                                     กลุ่ม Cluster:
                                 </span>
                                 <span className="text-right text-slate-800 font-bold">
-                                    {tooltipInfo.data.cluster}
+                                    {getGroupName(Number(tooltipInfo.data.cluster))}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center">

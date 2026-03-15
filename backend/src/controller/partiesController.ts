@@ -25,6 +25,7 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
     const voteAbsenceData = getVoteAbsenceData();
     const vizResultData = getVizResultData();
     const unityData = getUnityData();
+    const billsData = getBillsData();
 
     const clusteringData: PartyClustering[] = parties
         .filter((party) => vizResultData.some((r: any) => r.voter_party === party.name))
@@ -52,6 +53,11 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
         const entropy = entropyRow
             ? parseFloat(entropyRow.avg_entropy_bits)
             : 0.5;
+
+        // Calculate success rate from bills: (ENACTED / total)
+        const partyBills = billsData.filter((b: any) => b.party_cleaned === party.name);
+        const enactedBills = partyBills.filter((b: any) => b.status === "ENACTED");
+        const successRate = partyBills.length > 0 ? Math.round((enactedBills.length / partyBills.length) * 100) : 0;
 
         // Extract true cluster and PC data or fallback to simulated ones
         const cluster = vizRow ? parseInt(vizRow.Cluster) : (index % 3) + 1;
@@ -83,7 +89,7 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
             metrics: {
                 billTypes: "หลากหลาย",
                 unity: Math.round(unity),
-                successRate: Math.round(100 - entropy * 100),
+                successRate: successRate,
                 attendanceRate: Math.round(attendance),
                 votingAlignment: "ฝ่ายรัฐบาล",
             },
