@@ -5,12 +5,16 @@ import {
     getTrendVoteData,
     getVoteAbsenceData,
     getBillsData,
+    getClusteringData
 } from "../utils/dataStore.js";
 import type {
     PartyClustering,
     PartySpider,
     PartyPerformance,
 } from "../types/index.js";
+import { colors } from '../utils/const.js'
+
+const clusteringRaw = getClusteringData();
 
 export const getPartiesHandler = (req: Request, res: Response) => {
     res.json(getParties());
@@ -21,22 +25,31 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
     const entropyData = getEntropyData();
     const trendVoteData = getTrendVoteData();
     const voteAbsenceData = getVoteAbsenceData();
+    const clusteringRaw = getClusteringData();
 
     const clusteringData: PartyClustering[] = parties.map((party, index) => {
+
+        const clusterRow = clusteringRaw.find(
+            (r: any) => r.voter_party === party.name
+        );
+
         const entropyRow = entropyData.find(
-            (r: any) => r.voter_party === party.name,
+            (r: any) => r.voter_party === party.name
         ) as any;
+
         const trendRow = trendVoteData.find(
-            (r: any) => r.voter_party === party.name,
+            (r: any) => r.voter_party === party.name
         ) as any;
+
         const absenceRow = voteAbsenceData.find(
-            (r: any) => r.voter_party === party.name,
+            (r: any) => r.voter_party === party.name
         ) as any;
 
         const unity = trendRow ? parseFloat(trendRow.avg_follow_pct) : 50;
         const attendance = absenceRow
             ? 100 - parseFloat(absenceRow.avg_absence_pct)
             : 50;
+
         const entropy = entropyRow
             ? parseFloat(entropyRow.avg_entropy_bits)
             : 0.5;
@@ -44,11 +57,18 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
         return {
             id: party.id,
             name: party.name,
-            cluster: (index % 3) + 1,
-            color: index % 2 === 0 ? "#ef4444" : "#3b82f6",
-            scoreX: unity,
-            scoreY: attendance,
+
+            cluster: clusterRow ? Number(clusterRow.Cluster) : 0,
+
+            color: clusterRow
+                ? colors[Number(clusterRow.Cluster) % colors.length] ?? "#9ca3af"
+                : "#9ca3af",
+
+            scoreX: clusterRow ? Number(clusterRow.PC1) : 0,
+            scoreY: clusterRow ? Number(clusterRow.PC2) : 0,
+
             logoUrl: `/partys/${party.name}.jpg`,
+
             metrics: {
                 billTypes: "หลากหลาย",
                 unity: Math.round(unity),

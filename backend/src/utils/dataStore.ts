@@ -23,12 +23,14 @@ let entropyData: any[] = [];
 let trendVoteData: any[] = [];
 let voteAbsenceData: any[] = [];
 let partiesCache: Party[] = [];
+let clusteringData: any[] = [];
 
 export const initDataStore = () => {
     billsData = parseCsv("bills_cleaned_and_labeled2.csv");
     entropyData = parseCsv("entropy.csv");
     trendVoteData = parseCsv("trend_vote.csv");
     voteAbsenceData = parseCsv("vote_absence.csv");
+    clusteringData = parseCsv("clustering.csv");
 
     const sanitizeParty = (p: string) => {
         if (!p) return "";
@@ -47,6 +49,9 @@ export const initDataStore = () => {
         if (row.voter_party) row.voter_party = sanitizeParty(row.voter_party);
     });
     voteAbsenceData.forEach((row: any) => {
+        if (row.voter_party) row.voter_party = sanitizeParty(row.voter_party);
+    });
+    clusteringData.forEach((row: any) => {
         if (row.voter_party) row.voter_party = sanitizeParty(row.voter_party);
     });
 
@@ -74,3 +79,4 @@ export const getEntropyData = () => entropyData;
 export const getTrendVoteData = () => trendVoteData;
 export const getVoteAbsenceData = () => voteAbsenceData;
 export const getParties = () => partiesCache;
+export const getClusteringData = () => clusteringData;

@@ -160,6 +160,14 @@ export default function PartyClustering({
         nodes
             .append("image")
             .attr("href", (d) => d.logoUrl)
+            .each(function (d) {
+                const img = new Image();
+                img.src = d.logoUrl;
+
+                img.onerror = () => {
+                console.log("❌ Missing logo:", d.name, d.logoUrl);
+                };
+            })
             .attr("x", -nodeRadius)
             .attr("y", -nodeRadius)
             .attr("width", nodeRadius * 2)
