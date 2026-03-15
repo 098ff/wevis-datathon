@@ -1,4 +1,15 @@
-export interface PartyData {
+    export interface Party {
+    id: string;
+    name: string;
+}
+
+export interface Metric {
+    axis: string;
+    value: number;
+    bills: number;
+}
+
+export interface PartyClustering {
     id: string;
     name: string;
     cluster: number | string;
@@ -19,20 +30,14 @@ export interface PartyData {
     };
 }
 
-export interface Metric {
-    axis: string;
-    value: number;
-    bills: number;
-}
-
-export interface PartyDetail {
+export interface PartySpider {
     id: string;
     name: string;
     color: string;
     metrics: Metric[];
 }
 
-export interface YearData {
+export interface PerformanceDataPoint {
     year: string;
     votes: number;
     multitask: number;
@@ -44,7 +49,7 @@ export interface PartyPerformance {
     name: string;
     color: string;
     logoUrl: string;
-    data: YearData[];
+    data: PerformanceDataPoint[];
 }
 
 export interface Comment {

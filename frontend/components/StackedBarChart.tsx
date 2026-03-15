@@ -1,35 +1,36 @@
-"use client";
+"use client"
 
-import { useEffect, useRef, useState } from "react";
-import * as d3 from "d3";
-import { YearData, PartyPerformance, PartyData } from "../types";
-import { stackedBarChartData as mockData } from "../data/mockData";
+import { useEffect, useRef, useState, useMemo } from "react"
+import * as d3 from "d3"
+import { YearData, PartyData } from "../types"
+import { getPartyPerformance } from "../apis/parties"
+import { PartyPerformanceDTO } from "../types/dto"
 
 const metricLabels: Record<string, string> = {
     votes: "จำนวนครั้งการลงมติ",
     multitask: "ภาระหน้าที่ฝ่ายบริหาร",
     passedLaws: "จำนวนกฎหมายที่เสนอและผ่าน",
-};
+}
 
 // Fixed colors per metric across all bars
 const metricColors: Record<string, string> = {
     votes: "#6366f1", // Indigo
     multitask: "#14b8a6", // Teal
     passedLaws: "#f59e0b", // Amber
-};
-
-interface TooltipInfo {
-    visible: boolean;
-    x: number;
-    y: number;
-    year: string;
-    metricKey: string;
-    value: number;
 }
 
-const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
-    const svgRef = useRef<SVGSVGElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
+interface TooltipInfo {
+    visible: boolean
+    x: number
+    y: number
+    year: string
+    metricKey: string
+    value: number
+}
+
+const StackedBarGroup = ({ party }: { party: PartyPerformanceDTO }) => {
+    const svgRef = useRef<SVGSVGElement>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
     const [tooltip, setTooltip] = useState<TooltipInfo>({
         visible: false,
         x: 0,
@@ -37,17 +38,17 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
         year: "",
         metricKey: "",
         value: 0,
-    });
+    })
 
     useEffect(() => {
-        if (!svgRef.current || !containerRef.current) return;
+        if (!svgRef.current || !containerRef.current) return
 
-        const margin = { top: 20, right: 20, bottom: 30, left: 40 };
-        const width = 320 - margin.left - margin.right;
-        const height = 240 - margin.top - margin.bottom;
+        const margin = { top: 20, right: 20, bottom: 30, left: 40 }
+        const width = 320 - margin.left - margin.right
+        const height = 240 - margin.top - margin.bottom
 
-        const svg = d3.select(svgRef.current);
-        svg.selectAll("*").remove();
+        const svg = d3.select(svgRef.current)
+        svg.selectAll("*").remove()
 
         const g = svg
             .attr(
@@ -57,12 +58,12 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             .attr("width", "100%")
             .attr("height", "100%")
             .append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
+            .attr("transform", `translate(${margin.left},${margin.top})`)
 
-        const subgroups = ["votes", "multitask", "passedLaws"] as const;
-        const groups = party.data.map((d) => d.year);
+        const subgroups = ["votes", "multitask", "passedLaws"] as const
+        const groups = party.data.map((d) => d.year)
 
-        const x = d3.scaleBand().domain(groups).range([0, width]).padding(0.3);
+        const x = d3.scaleBand().domain(groups).range([0, width]).padding(0.3)
 
         g.append("g")
             .attr("transform", `translate(0,${height})`)
@@ -70,23 +71,23 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             .selectAll("text")
             .style("font-family", "inherit")
             .style("fill", "#64748b")
-            .style("font-size", "12px");
+            .style("font-size", "12px")
 
         const maxVal =
             d3.max(party.data, (d) => d.votes + d.multitask + d.passedLaws) ||
-            100;
-        const yMax = Math.ceil(maxVal / 10) * 10;
+            100
+        const yMax = Math.ceil(maxVal / 10) * 10
 
-        const y = d3.scaleLinear().domain([0, yMax]).range([height, 0]);
+        const y = d3.scaleLinear().domain([0, yMax]).range([height, 0])
 
         g.append("g")
             .call(d3.axisLeft(y).ticks(5))
             .selectAll("text")
             .style("font-family", "inherit")
             .style("fill", "#64748b")
-            .style("font-size", "12px");
+            .style("font-size", "12px")
 
-        const stackedData = d3.stack<YearData>().keys(subgroups)(party.data);
+        const stackedData = d3.stack<YearData>().keys(subgroups)(party.data)
 
         const rects = g
             .append("g")
@@ -104,23 +105,23 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             .attr("height", 0)
             .attr("width", x.bandwidth())
             .attr("rx", 2)
-            .style("cursor", "pointer");
+            .style("cursor", "pointer")
 
         // Hover interactions
         rects
             .on("mouseover", function (event, d) {
                 const parentData = d3
                     .select((this as SVGElement).parentNode as SVGGElement)
-                    .datum() as { key: string };
-                const key = parentData.key;
+                    .datum() as { key: string }
+                const key = parentData.key
 
                 d3.select(this)
                     .transition()
                     .duration(150)
                     .attr("stroke", "#334155")
-                    .attr("stroke-width", 2);
+                    .attr("stroke-width", 2)
 
-                const [xPos, yPos] = d3.pointer(event, containerRef.current);
+                const [xPos, yPos] = d3.pointer(event, containerRef.current)
                 setTooltip({
                     visible: true,
                     x: xPos,
@@ -128,19 +129,19 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
                     year: d.data.year,
                     metricKey: key,
                     value: d.data[key as keyof YearData] as number,
-                });
+                })
             })
             .on("mousemove", function (event) {
-                const [xPos, yPos] = d3.pointer(event, containerRef.current);
-                setTooltip((prev) => ({ ...prev, x: xPos, y: yPos }));
+                const [xPos, yPos] = d3.pointer(event, containerRef.current)
+                setTooltip((prev) => ({ ...prev, x: xPos, y: yPos }))
             })
             .on("mouseout", function () {
                 d3.select(this)
                     .transition()
                     .duration(150)
-                    .attr("stroke", "none");
-                setTooltip((prev) => ({ ...prev, visible: false }));
-            });
+                    .attr("stroke", "none")
+                setTooltip((prev) => ({ ...prev, visible: false }))
+            })
 
         rects
             .transition()
@@ -148,8 +149,8 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
             .delay((d, i) => i * 150)
             .ease(d3.easeCubicOut)
             .attr("y", (d) => y(d[1]))
-            .attr("height", (d) => y(d[0]) - y(d[1]));
-    }, [party]);
+            .attr("height", (d) => y(d[0]) - y(d[1]))
+    }, [party])
 
     return (
         <div
@@ -202,7 +203,7 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
                             ></span>
                             {tooltip.value}{" "}
                             <span className="text-sm font-normal text-slate-300">
-                                ครั้ง/ฉบับ
+                                ครั้ง
                             </span>
                         </div>
                     </div>
@@ -211,43 +212,66 @@ const StackedBarGroup = ({ party }: { party: PartyPerformance }) => {
                 </div>
             )}
         </div>
-    );
-};
+    )
+}
 
 interface StackedBarChartProps {
-    selectedPartyId?: string;
-    globalPartyData?: PartyData[];
+    selectedPartyId?: string
+    globalPartyData?: PartyData[]
 }
 
 export default function StackedBarChart({
     selectedPartyId = "p1",
     globalPartyData = [],
 }: StackedBarChartProps = {}) {
+    const [performanceData, setPerformanceData] = useState<
+        PartyPerformanceDTO[]
+    >([])
+
+    useEffect(() => {
+        getPartyPerformance()
+            .then(setPerformanceData)
+            .catch((err) =>
+                console.error("Failed to load performance data", err),
+            )
+    }, [])
+
     // Map the global color back to our mock performance data
     const getPartyColor = (id: string, fallback: string) => {
-        const p = globalPartyData.find((gp) => gp.id === id);
-        return p ? p.color : fallback;
-    };
+        const p = globalPartyData.find((gp) => gp.id === id)
+        return p ? p.color : fallback
+    }
 
-    const enhancedMockData = mockData.map((p) => ({
-        ...p,
-        color: getPartyColor(p.id, p.color),
-    }));
+    const enhancedData = useMemo(() => {
+        return performanceData.map((p) => ({
+            ...p,
+            color: getPartyColor(p.id, p.color),
+        }))
+    }, [performanceData, globalPartyData])
 
     const selectedParty =
-        enhancedMockData.find((p) => p.id === selectedPartyId) ||
-        enhancedMockData[0];
+        enhancedData.find((p) => p.id === selectedPartyId) || enhancedData[0]
 
-    const top3Parties = enhancedMockData
-        .filter((p) => p.id !== selectedParty.id)
-        .slice(0, 3);
+    const getPartyScore = (party: PartyPerformanceDTO) => {
+        if (!party.data || party.data.length === 0) return 0
+        const total = party.data.reduce(
+            (sum, year) => sum + year.votes + year.multitask + year.passedLaws,
+            0,
+        )
+        return total / party.data.length
+    }
 
-    while (top3Parties.length < 3 && enhancedMockData.length >= 3) {
-        const remaining = enhancedMockData.find(
-            (p) => !top3Parties.includes(p) && p.id !== selectedParty.id,
-        );
-        if (remaining) top3Parties.push(remaining);
-        else break;
+    const top3Parties: PartyPerformanceDTO[] = [...enhancedData]
+        .filter((p) => p.id !== selectedParty?.id)
+        .sort((a, b) => getPartyScore(b) - getPartyScore(a))
+        .slice(0, 3)
+
+    if (enhancedData.length === 0 || !selectedParty) {
+        return (
+            <div className="mt-8 p-12 bg-slate-50 rounded-3xl border border-slate-200 flex justify-center text-slate-400 animate-pulse">
+                กำลังโหลดข้อมูล...
+            </div>
+        )
     }
 
     return (
@@ -328,5 +352,5 @@ export default function StackedBarChart({
                 </div>
             </div>
         </section>
-    );
+    )
 }

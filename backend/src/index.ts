@@ -1,26 +1,21 @@
-import express from 'express';
-import type { Request, Response } from 'express'; 
-import cors from 'cors';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import express from "express";
+import cors from "cors";
+import { initDataStore } from "./utils/dataStore.js";
+import { partiesRouter } from "./router/partiesRouter.js";
+import { commentsRouter } from "./router/commentsRouter.js";
 
 const app = express();
-const port = process.env.PORT || 3001;
-
-app.use(cors()); 
+app.use(cors());
 app.use(express.json());
 
-// ######## Testing API Route ########
-app.get("/", (req, res) => {
-  res.send("Backend running")
-})
-// ###################################
+// Initialize data from CSVs
+initDataStore();
 
-app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
-  res.status(200).json({});
-});
+// Mount routers
+app.use("/api/parties", partiesRouter);
+app.use("/api/comments", commentsRouter);
 
-app.listen(port, () => {
-  console.log(`[server]: Server is running at http://localhost:${port}`);
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });

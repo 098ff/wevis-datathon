@@ -1,253 +1,326 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import * as d3 from "d3";
+import { useEffect, useState, useMemo } from "react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, Billboard, Text, Image as DreiImage } from "@react-three/drei";
+import * as THREE from "three";
 import { PartyData } from "../types";
-import { partyClusteringData as mockData } from "../data/mockData";
 import { extractPartyColors } from "../utils/colors";
 
 export type { PartyData };
-export { mockData, extractPartyColors };
+export { extractPartyColors };
+
+interface TooltipInfo {
+    visible: boolean;
+    x: number;
+    y: number;
+    data: PartyData | null;
+}
+
+function getGroupName(num: number){
+    const nameMapper: Record<number, string> = {
+        0:'พรรคกระแสหลัก',
+        1:'พรรคเล็ก',
+        2:'พรรคเศรษฐกิจ',
+        3:'พรรคทางเลือกเชิงปฏิรูป',
+        4:'พรรคเป็นธรรม',
+        5:'พรรคขนาดเล็กที่มีฐานเฉพาะกลุ่ม',
+        6:'พรรคท้องถิ่น',
+        7:'พรรคปัดเศษ',
+        8:'พรรคฐานมวลชนและท้องถิ่น',
+    }
+    if (num in nameMapper) {
+        return nameMapper[num];
+    }
+    return 'พรรคอื่นๆ';
+}
+
+function PartyNode({
+    data,
+    setTooltipInfo,
+    selectedCluster,
+    onSelect,
+}: {
+    data: PartyData;
+    setTooltipInfo: (info: any) => void;
+    selectedCluster: string | null;
+    onSelect: (cluster: string) => void;
+}) {
+    const [hovered, setHovered] = useState(false);
+
+    // Scaling the PC values for better spread in 3D space
+    const position: [number, number, number] = useMemo(() => {
+        return [data.pc1 * 8, data.pc2 * 8, data.pc3 * 8];
+    }, [data.pc1, data.pc2, data.pc3]);
+
+    const isDimmed = selectedCluster !== null && String(data.cluster) !== selectedCluster;
+    const opacity = isDimmed ? 0.15 : 1.0;
+    const scale = hovered && !isDimmed ? 1.4 : 1.2;
+    const imgScale = hovered && !isDimmed ? 2.4 : 2;
+
+    return (
+        <Billboard
+            position={position}
+            onClick={(e) => {
+                e.stopPropagation();
+                onSelect(String(data.cluster));
+            }}
+            onPointerOver={(e) => {
+                e.stopPropagation();
+                if (isDimmed) return;
+                setHovered(true);
+                // Approximate HTML coordinates from pointer event
+                setTooltipInfo({
+                    visible: true,
+                    x: e.clientX,
+                    y: e.clientY,
+                    data,
+                });
+            }}
+            onPointerOut={(e) => {
+                e.stopPropagation();
+                if (isDimmed) return;
+                setHovered(false);
+                setTooltipInfo((prev: any) => ({ ...prev, visible: false }));
+            }}
+            onPointerMove={(e) => {
+                if (hovered && !isDimmed) {
+                    setTooltipInfo((prev: any) => ({
+                        ...prev,
+                        x: e.clientX,
+                        y: e.clientY,
+                    }));
+                }
+            }}
+        >
+            <mesh>
+                <circleGeometry args={[scale, 32]} />
+                <meshBasicMaterial 
+                    color={isDimmed ? "#94a3b8" : (data.clusterColor || data.color)} 
+                    transparent 
+                    opacity={opacity} 
+                />
+            </mesh>
+            <mesh position={[0, 0, 0.01]}>
+                <circleGeometry args={[scale - 0.1, 32]} />
+                <meshBasicMaterial color="#ffffff" transparent opacity={opacity} />
+            </mesh>
+            <DreiImage
+                url={data.logoUrl}
+                transparent
+                opacity={opacity}
+                radius={scale - 0.2}
+                position={[0, 0, 0.02]}
+                scale={imgScale}
+            />
+            {/* Optional name tag below the logo */}
+            {hovered && !isDimmed && (
+                <Text
+                    position={[0, -1.8, 0.02]}
+                    fontSize={0.4}
+                    color="#334155"
+                    anchorX="center"
+                    anchorY="middle"
+                    outlineWidth={0.05}
+                    outlineColor="#ffffff"
+                >
+                    {data.name}
+                </Text>
+            )}
+        </Billboard>
+    );
+}
 
 export default function PartyClustering({
-    initialData = mockData,
+    initialData = [],
 }: {
     initialData?: PartyData[];
 }) {
-    const svgRef = useRef<SVGSVGElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
     const [partyData, setPartyData] = useState<PartyData[]>(initialData);
+    const [tooltipInfo, setTooltipInfo] = useState<TooltipInfo>({
+        visible: false,
+        x: 0,
+        y: 0,
+        data: null,
+    });
+    const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
+
+    const handleSelectCluster = (clusterId: string) => {
+        setSelectedCluster((prev) => (prev === clusterId ? null : clusterId));
+    };
 
     useEffect(() => {
         setPartyData(initialData);
     }, [initialData]);
 
-    // Tooltip state
-    const [tooltipInfo, setTooltipInfo] = useState<{
-        visible: boolean;
-        x: number;
-        y: number;
-        data: PartyData | null;
-    }>({ visible: false, x: 0, y: 0, data: null });
-
-    useEffect(() => {
-        if (!svgRef.current) return;
-
-        const { width, height } = dimensions;
-        const margin = { top: 60, right: 100, bottom: 60, left: 60 };
-        const innerWidth = width - margin.left - margin.right;
-        const innerHeight = height - margin.top - margin.bottom;
-
-        const svg = d3.select(svgRef.current);
-        svg.selectAll("*").remove();
-
-        const g = svg
-            .attr("viewBox", `0 0 ${width} ${height}`)
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
-
-        // Scales
-        const xScale = d3.scaleLinear().domain([0, 100]).range([0, innerWidth]);
-        const yScale = d3
-            .scaleLinear()
-            .domain([0, 100])
-            .range([innerHeight, 0]);
-
-        // Draw clusters (background bubbles)
-        const clusters = Array.from(
-            d3.group(partyData, (d) => d.cluster).entries(),
-        );
-
-        clusters.forEach(([clusterId, parties]) => {
-            // Calculate cluster center
-            const centerX = d3.mean(parties, (d) => d.scoreX) || 50;
-            const centerY = d3.mean(parties, (d) => d.scoreY) || 50;
-
-            g.append("circle")
-                .attr("cx", xScale(centerX))
-                .attr("cy", yScale(centerY))
-                .attr("r", 0)
-                .attr("fill", parties[0].color)
-                .attr("opacity", 0.1)
-                .attr("stroke", parties[0].color)
-                .attr("stroke-dasharray", "4,4")
-                .transition()
-                .duration(1200)
-                .ease(d3.easeBounceOut)
-                .attr("r", 110);
-
-            g.append("text")
-                .attr("x", xScale(centerX))
-                .attr("y", yScale(centerY) - 120)
-                .attr("text-anchor", "middle")
-                .attr("fill", "#64748b")
-                .attr("font-size", "14px")
-                .text(`กลุ่มที่ ${clusterId}`)
-                .attr("opacity", 0)
-                .transition()
-                .delay(800)
-                .duration(800)
-                .attr("opacity", 1);
+    const clusterCentroids = useMemo(() => {
+        const sums: Record<
+            string,
+            { count: number; x: number; y: number; z: number; color: string }
+        > = {};
+        
+        // Pass 1: Sum coordinates
+        partyData.forEach((p) => {
+            const c = String(p.cluster);
+            if (!sums[c]) {
+                sums[c] = { count: 0, x: 0, y: 0, z: 0, color: p.clusterColor || p.color };
+            }
+            sums[c].count++;
+            sums[c].x += p.pc1 * 8;
+            sums[c].y += p.pc2 * 8;
+            sums[c].z += p.pc3 * 8;
         });
 
-        const nodeRadius = 25; // Fixed size for all parties
-
-        // Draw parties
-        const nodes = g
-            .selectAll(".node")
-            .data(partyData)
-            .enter()
-            .append("g")
-            .attr("class", "node")
-            .attr(
-                "transform",
-                (d) => `translate(${xScale(d.scoreX)},${yScale(d.scoreY)})`,
-            )
-            .style("cursor", "pointer")
-            .on("mouseover", (event, d) => {
-                const [x, y] = d3.pointer(event, containerRef.current);
-                setTooltipInfo({
-                    visible: true,
-                    x: x,
-                    y: y,
-                    data: d,
-                });
-                d3.select(event.currentTarget)
-                    .select("circle")
-                    .transition()
-                    .duration(200)
-                    .attr("stroke-width", 5)
-                    .attr("r", nodeRadius + 5);
-            })
-            .on("mousemove", (event) => {
-                const [x, y] = d3.pointer(event, containerRef.current);
-                setTooltipInfo((prev) => ({ ...prev, x, y }));
-            })
-            .on("mouseout", (event) => {
-                setTooltipInfo((prev) => ({ ...prev, visible: false }));
-                d3.select(event.currentTarget)
-                    .select("circle")
-                    .transition()
-                    .duration(200)
-                    .attr("stroke-width", 3)
-                    .attr("r", nodeRadius);
-            });
-
-        // Add defs for clip path
-        const defs = g.append("defs");
-        nodes.each(function (d, i) {
-            defs.append("clipPath")
-                .attr("id", `clip-${d.id}`)
-                .append("circle")
-                .attr("r", nodeRadius);
+        // Calculate actual centroids
+        const centroids: Record<string, { x: number; y: number; z: number; color: string; maxDist: number }> = {};
+        Object.entries(sums).forEach(([id, data]) => {
+            centroids[id] = {
+                x: data.x / data.count,
+                y: data.y / data.count,
+                z: data.z / data.count,
+                color: data.color,
+                maxDist: 0
+            };
         });
 
-        nodes
-            .append("circle")
-            .attr("r", 0)
-            .attr("fill", "#fff")
-            .attr("stroke", (d) => d.color)
-            .attr("stroke-width", 3)
-            .style("filter", "drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))")
-            .transition()
-            .delay((d, i) => 800 + i * 150)
-            .duration(1200)
-            .ease(d3.easeElasticOut)
-            .attr("r", nodeRadius);
-
-        nodes
-            .append("image")
-            .attr("href", (d) => d.logoUrl)
-            .attr("x", -nodeRadius)
-            .attr("y", -nodeRadius)
-            .attr("width", nodeRadius * 2)
-            .attr("height", nodeRadius * 2)
-            .attr("clip-path", (d) => `url(#clip-${d.id})`)
-            .attr("opacity", 0)
-            .transition()
-            .delay((d, i) => 1200 + i * 150)
-            .duration(600)
-            .attr("opacity", 1);
-
-        nodes
-            .append("text")
-            .attr("text-anchor", "middle")
-            .attr("y", nodeRadius + 18)
-            .attr("fill", "#334155")
-            .attr("font-size", "12px")
-            .attr("font-weight", "600")
-            .text((d) => d.name)
-            .attr("opacity", 0)
-            .transition()
-            .delay((d, i) => 1200 + i * 150)
-            .duration(600)
-            .attr("opacity", 1);
-
-        // Draw Legend
-        const legend = g
-            .append("g")
-            .attr("class", "legend")
-            .attr("transform", `translate(${innerWidth + 20}, 0)`);
-
-        clusters.forEach(([clusterId, parties], i) => {
-            const legendRow = legend
-                .append("g")
-                .attr("transform", `translate(0, ${i * 25})`)
-                .attr("opacity", 0);
-
-            legendRow
-                .append("circle")
-                .attr("cx", 0)
-                .attr("cy", -4)
-                .attr("r", 6)
-                .attr("fill", parties[0].color)
-                .attr("opacity", 0.8);
-
-            legendRow
-                .append("text")
-                .attr("x", 12)
-                .attr("y", 0)
-                .attr("font-size", "12px")
-                .attr("fill", "#64748b")
-                .attr("alignment-baseline", "middle")
-                .text(`กลุ่มที่ ${clusterId}`);
-
-            legendRow
-                .transition()
-                .delay(1800 + i * 200)
-                .duration(600)
-                .attr("opacity", 1);
+        // Pass 2: Find max distance from centroid for each cluster
+        partyData.forEach((p) => {
+            const c = String(p.cluster);
+            const centroid = centroids[c];
+            if (centroid) {
+                const px = p.pc1 * 8;
+                const py = p.pc2 * 8;
+                const pz = p.pc3 * 8;
+                const dist = Math.sqrt(
+                    Math.pow(px - centroid.x, 2) + 
+                    Math.pow(py - centroid.y, 2) + 
+                    Math.pow(pz - centroid.z, 2)
+                );
+                if (dist > centroid.maxDist) {
+                    centroid.maxDist = dist;
+                }
+            }
         });
-    }, [dimensions, partyData]);
+
+        return Object.entries(centroids).map(([id, data]) => ({
+            id,
+            x: data.x,
+            y: data.y,
+            z: data.z,
+            color: data.color,
+            radius: Math.max(8, data.maxDist),
+        }));
+    }, [partyData]);
 
     return (
         <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative">
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">
-                    Party Clustering
-                </h2>
-                <p className="text-slate-500 text-sm">
-                    อธิบายภาพรวมว่าแต่ละพรรคมี Character ยังไงด้วยการทำ
-                    Clustering ตาม Score ที่เรากำหนด
-                </p>
+            <div className="mb-6 flex justify-between items-start">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">
+                        Party Clustering (3D)
+                    </h2>
+                    <p className="text-slate-500 text-sm">
+                        อธิบายภาพรวมว่าแต่ละพรรคมี Character ยังไงด้วยการทำ
+                        Clustering (PC1, PC2, PC3) โดยสามารถหมุนและซูมดูได้
+                    </p>
+                </div>
             </div>
-            <div
-                ref={containerRef}
-                className="flex justify-center items-center overflow-visible relative"
-            >
-                <svg
-                    ref={svgRef}
-                    className="max-w-full h-auto"
-                    style={{ minHeight: "500px" }}
-                ></svg>
 
-                {/* Tooltip overlay */}
+            <div
+                className="w-full relative touch-none bg-slate-50 rounded-xl overflow-hidden border border-slate-100"
+                style={{ height: "600px" }}
+            >
+                <Canvas 
+                    camera={{ position: [0, 0, 25], fov: 50 }} 
+                    onPointerMissed={() => setSelectedCluster(null)}
+                >
+                    <ambientLight intensity={0.8} />
+                    <pointLight position={[10, 10, 10]} intensity={1} />
+                    <axesHelper args={[40]} />
+                    <gridHelper args={[60, 60, '#cbd5e1', '#f1f5f9']} position={[0, -20, 0]} />
+                    
+                    {/* Render Cluster Fog Spheres */}
+                    {clusterCentroids.map((c) => (
+                        <mesh key={`fog-${c.id}`} position={[c.x, c.y, c.z]}>
+                            <sphereGeometry args={[c.radius, 32, 32]} />
+                            <shaderMaterial
+                                transparent
+                                depthWrite={false}
+                                side={THREE.DoubleSide}
+                                uniforms={{
+                                    color: { value: new THREE.Color(c.color) },
+                                    uOpacityMult: { value: selectedCluster !== null && selectedCluster !== String(c.id) ? 0.0 : 1.0 }
+                                }}
+                                vertexShader={`
+                                    varying vec3 vNormal;
+                                    void main() {
+                                        vNormal = normalize(normalMatrix * normal);
+                                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                                    }
+                                `}
+                                fragmentShader={`
+                                    uniform vec3 color;
+                                    uniform float uOpacityMult;
+                                    varying vec3 vNormal;
+                                    void main() {
+                                        // Creates a volumetric soft fade-out from center to edges
+                                        float intensity = pow(abs(vNormal.z), 1.8) * 0.2 * uOpacityMult;
+                                        gl_FragColor = vec4(color, intensity);
+                                    }
+                                `}
+                            />
+                        </mesh>
+                    ))}
+
+                    {partyData.map((party) => (
+                        <PartyNode
+                            key={party.id}
+                            data={party}
+                            setTooltipInfo={setTooltipInfo}
+                            selectedCluster={selectedCluster}
+                            onSelect={handleSelectCluster}
+                        />
+                    ))}
+
+                    <OrbitControls
+                        enableDamping
+                        dampingFactor={0.05}
+                        rotateSpeed={0.8}
+                        zoomSpeed={1.2}
+                        minDistance={5}
+                        maxDistance={50}
+                    />
+                </Canvas>
+
+                {/* Legend Overlay */}
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl border border-slate-200 shadow-sm pointer-events-none">
+                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">กลุ่ม (Clusters)</h4>
+                    {Array.from(new Set(partyData.map((p) => p.cluster))).map(
+                        (clusterId) => {
+                            const sampleParty = partyData.find((p) => p.cluster === clusterId);
+                            if (!sampleParty) return null;
+                            const isDimmed = selectedCluster !== null && selectedCluster !== String(clusterId);
+                            return (
+                                <div 
+                                    key={clusterId} 
+                                    className={`flex items-center gap-2 mb-1.5 last:mb-0 cursor-pointer transition-opacity hover:opacity-100 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}
+                                    onClick={() => handleSelectCluster(String(clusterId))}
+                                >
+                                    <div 
+                                        className="w-3 h-3 rounded-full shadow-sm" 
+                                        style={{ backgroundColor: sampleParty.clusterColor || sampleParty.color }}
+                                    />
+                                    <span className="text-sm font-medium text-slate-700">{getGroupName(Number(clusterId))}</span>
+                                </div>
+                            );
+                        }
+                    )}
+                </div>
+
+                {/* Tooltip Overlay */}
                 {tooltipInfo.visible && tooltipInfo.data && (
                     <div
-                        className="absolute z-[100] bg-white p-4 rounded-xl shadow-2xl border border-slate-200 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-4 w-80 transition-opacity duration-200"
+                        className="fixed z-[100] bg-white p-4 rounded-xl shadow-2xl border border-slate-200 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-4 w-80 transition-opacity duration-200"
                         style={{
                             left: tooltipInfo.x,
                             top: tooltipInfo.y - 15,
@@ -258,7 +331,7 @@ export default function PartyClustering({
                                 src={tooltipInfo.data.logoUrl}
                                 alt={tooltipInfo.data.name}
                                 className="w-8 h-8 rounded-full border-2"
-                                style={{ borderColor: tooltipInfo.data.color }}
+                                style={{ borderColor: tooltipInfo.data.clusterColor || tooltipInfo.data.color }}
                             />
                             <h4
                                 className="font-bold text-slate-800"
@@ -271,9 +344,17 @@ export default function PartyClustering({
                         <div className="space-y-2 text-sm text-slate-600">
                             <div className="flex justify-between items-start gap-2">
                                 <span className="font-medium shrink-0">
-                                    ประเภทร่างกฎหมาย:
+                                    กลุ่ม Cluster:
                                 </span>
-                                <span className="text-right text-slate-800">
+                                <span className="text-right text-slate-800 font-bold">
+                                    {getGroupName(Number(tooltipInfo.data.cluster))}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="font-medium">
+                                    ประเภทร่างกฏหมาย:
+                                </span>
+                                <span className="text-slate-800">
                                     {tooltipInfo.data.metrics.billTypes}
                                 </span>
                             </div>
@@ -285,30 +366,16 @@ export default function PartyClustering({
                                     {tooltipInfo.data.metrics.unity}%
                                 </span>
                             </div>
-                            <div className="flex justify-between items-center">
-                                <span className="font-medium">
-                                    อัตราร่างกฎหมายสำเร็จ:
-                                </span>
-                                <span className="text-slate-800">
-                                    {tooltipInfo.data.metrics.successRate}%
-                                </span>
+                            <div className="border-t border-slate-100 pt-2 mt-2">
+                                <div className="flex justify-between items-center">
+                                    <span className="font-medium">จำนวนร่างกฏหมายที่เสนอและสำเร็จ:</span>
+                                    <span className="text-slate-800">{tooltipInfo.data.metrics.successRate}%</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="font-medium">การเข้าประชุม:</span>
+                                    <span className="text-slate-800">{tooltipInfo.data.metrics.attendanceRate}%</span>
+                                </div>
                             </div>
-                            <div className="flex justify-between items-center">
-                                <span className="font-medium">
-                                    อัตราการมาลงมติ:
-                                </span>
-                                <span className="text-slate-800">
-                                    {tooltipInfo.data.metrics.attendanceRate}%
-                                </span>
-                            </div>
-                            {/*<div className="flex justify-between items-start gap-2">
-                                <span className="font-medium shrink-0">
-                                    พฤติกรรมการ Vote:
-                                </span>
-                                <span className="text-right text-slate-800">
-                                    {tooltipInfo.data.metrics.votingAlignment}
-                                </span>
-                            </div>*/}
                         </div>
 
                         {/* Triangle pointer */}

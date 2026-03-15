@@ -1,12 +1,19 @@
-export interface PartyData {
+export interface PartyDTO {
     id: string;
     name: string;
-    cluster: number | string;
-    pc1: number;
-    pc2: number;
-    pc3: number;
+}
+
+export interface MetricDTO {
+    axis: string;
+    value: number;
+    bills: number;
+}
+
+export interface PartyClusteringDTO {
+    id: string;
+    name: string;
+    cluster: number;
     color: string;
-    clusterColor?: string;
     scoreX: number;
     scoreY: number;
     logoUrl: string;
@@ -19,35 +26,29 @@ export interface PartyData {
     };
 }
 
-export interface Metric {
-    axis: string;
-    value: number;
-    bills: number;
-}
-
-export interface PartyDetail {
+export interface PartySpiderDTO {
     id: string;
     name: string;
     color: string;
-    metrics: Metric[];
+    metrics: MetricDTO[];
 }
 
-export interface YearData {
+export interface PerformanceDataPointDTO {
     year: string;
     votes: number;
     multitask: number;
     passedLaws: number;
 }
 
-export interface PartyPerformance {
+export interface PartyPerformanceDTO {
     id: string;
     name: string;
     color: string;
     logoUrl: string;
-    data: YearData[];
+    data: PerformanceDataPointDTO[];
 }
 
-export interface Comment {
+export interface CommentDTO {
     id: string;
     partyId: string;
     author: string;
