@@ -45,7 +45,7 @@ export default function Home() {
                         Political Party Analysis
                     </h1>
                     <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                        การสร้างภาพจำลองข้อมูลการเมืองแบบ 2 มิติ
+                        การสร้างภาพจำลองข้อมูลการเมืองแบบ 3 มิติ
                         เพื่อวิเคราะห์ลักษณะเฉพาะ ผลงาน
                         และความคิดเห็นของประชาชนต่อพรรคการเมือง
                     </p>

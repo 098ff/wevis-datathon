@@ -109,6 +109,66 @@ export default function PartyClustering({
         setPartyData(initialData);
     }, [initialData]);
 
+    const clusterCentroids = useMemo(() => {
+        const sums: Record<
+            string,
+            { count: number; x: number; y: number; z: number; color: string }
+        > = {};
+        
+        // Pass 1: Sum coordinates
+        partyData.forEach((p) => {
+            const c = String(p.cluster);
+            if (!sums[c]) {
+                sums[c] = { count: 0, x: 0, y: 0, z: 0, color: p.clusterColor || p.color };
+            }
+            sums[c].count++;
+            sums[c].x += p.pc1 * 8;
+            sums[c].y += p.pc2 * 8;
+            sums[c].z += p.pc3 * 8;
+        });
+
+        // Calculate actual centroids
+        const centroids: Record<string, { x: number; y: number; z: number; color: string; maxDist: number }> = {};
+        Object.entries(sums).forEach(([id, data]) => {
+            centroids[id] = {
+                x: data.x / data.count,
+                y: data.y / data.count,
+                z: data.z / data.count,
+                color: data.color,
+                maxDist: 0
+            };
+        });
+
+        // Pass 2: Find max distance from centroid for each cluster
+        partyData.forEach((p) => {
+            const c = String(p.cluster);
+            const centroid = centroids[c];
+            if (centroid) {
+                const px = p.pc1 * 8;
+                const py = p.pc2 * 8;
+                const pz = p.pc3 * 8;
+                const dist = Math.sqrt(
+                    Math.pow(px - centroid.x, 2) + 
+                    Math.pow(py - centroid.y, 2) + 
+                    Math.pow(pz - centroid.z, 2)
+                );
+                if (dist > centroid.maxDist) {
+                    centroid.maxDist = dist;
+                }
+            }
+        });
+
+        return Object.entries(centroids).map(([id, data]) => ({
+            id,
+            x: data.x,
+            y: data.y,
+            z: data.z,
+            color: data.color,
+            // Radius is actual max distance + 6 units of padding to cover billboard curvature and outliers, minimum 8
+            radius: Math.max(8, data.maxDist),
+        }));
+    }, [partyData]);
+
     return (
         <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative">
             <div className="mb-6 flex justify-between items-start">
@@ -133,6 +193,19 @@ export default function PartyClustering({
                     <axesHelper args={[40]} />
                     <gridHelper args={[60, 60, '#cbd5e1', '#f1f5f9']} position={[0, -20, 0]} />
                     
+                    {/* Render Cluster Fog Spheres */}
+                    {clusterCentroids.map((c) => (
+                        <mesh key={`fog-${c.id}`} position={[c.x, c.y, c.z]}>
+                            <sphereGeometry args={[c.radius, 32, 32]} />
+                            <meshBasicMaterial
+                                color={c.color}
+                                transparent
+                                opacity={0.15}
+                                depthWrite={false}
+                            />
+                        </mesh>
+                    ))}
+
                     {partyData.map((party) => (
                         <PartyNode
                             key={party.id}
