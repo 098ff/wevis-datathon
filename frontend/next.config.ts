@@ -1,7 +1,15 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  output: "standalone",
-};
+    output: "standalone",
+    async rewrites() {
+        return [
+            {
+                source: "/api/:path*",
+                destination: "http://43.210.116.106/api/:path*",
+            },
+        ]
+    },
+}
 
-export default nextConfig;
+export default nextConfig
