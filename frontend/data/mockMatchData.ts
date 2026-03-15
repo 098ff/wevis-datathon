@@ -121,7 +121,7 @@ export const mockBills: MatchBill[] = [
         category: "แรงงาน",
         userAgreementPct: 88,
         partyStances: {
-            "ก้าวไกล": "yes",
+            "ประชาชน": "yes",
             "เพื่อไทย": "yes",
             "ภูมิใจไทย": "no",
             "ประชาธิปัตย์": "yes",
@@ -137,7 +137,7 @@ export const mockBills: MatchBill[] = [
         category: "เศรษฐกิจ",
         userAgreementPct: 91,
         partyStances: {
-            "ก้าวไกล": "yes",
+            "ประชาชน": "yes",
             "เพื่อไทย": "yes",
             "ภูมิใจไทย": "yes",
             "ประชาธิปัตย์": "yes",
@@ -153,7 +153,7 @@ export const mockBills: MatchBill[] = [
         category: "การเมือง",
         userAgreementPct: 54,
         partyStances: {
-            "ก้าวไกล": "yes",
+            "ประชาชน": "yes",
             "เพื่อไทย": "yes",
             "ภูมิใจไทย": "no",
             "ประชาธิปัตย์": "no",
