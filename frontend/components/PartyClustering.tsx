@@ -20,9 +20,13 @@ interface TooltipInfo {
 function PartyNode({
     data,
     setTooltipInfo,
+    selectedCluster,
+    onSelect,
 }: {
     data: PartyData;
     setTooltipInfo: (info: any) => void;
+    selectedCluster: string | null;
+    onSelect: (cluster: string) => void;
 }) {
     const [hovered, setHovered] = useState(false);
 
@@ -31,11 +35,21 @@ function PartyNode({
         return [data.pc1 * 8, data.pc2 * 8, data.pc3 * 8];
     }, [data.pc1, data.pc2, data.pc3]);
 
+    const isDimmed = selectedCluster !== null && String(data.cluster) !== selectedCluster;
+    const opacity = isDimmed ? 0.15 : 1.0;
+    const scale = hovered && !isDimmed ? 1.4 : 1.2;
+    const imgScale = hovered && !isDimmed ? 2.4 : 2;
+
     return (
         <Billboard
             position={position}
+            onClick={(e) => {
+                e.stopPropagation();
+                onSelect(String(data.cluster));
+            }}
             onPointerOver={(e) => {
                 e.stopPropagation();
+                if (isDimmed) return;
                 setHovered(true);
                 // Approximate HTML coordinates from pointer event
                 setTooltipInfo({
@@ -47,11 +61,12 @@ function PartyNode({
             }}
             onPointerOut={(e) => {
                 e.stopPropagation();
+                if (isDimmed) return;
                 setHovered(false);
                 setTooltipInfo((prev: any) => ({ ...prev, visible: false }));
             }}
             onPointerMove={(e) => {
-                if (hovered) {
+                if (hovered && !isDimmed) {
                     setTooltipInfo((prev: any) => ({
                         ...prev,
                         x: e.clientX,
@@ -61,22 +76,27 @@ function PartyNode({
             }}
         >
             <mesh>
-                <circleGeometry args={[hovered ? 1.4 : 1.2, 32]} />
-                <meshBasicMaterial color={data.clusterColor || data.color} />
+                <circleGeometry args={[scale, 32]} />
+                <meshBasicMaterial 
+                    color={isDimmed ? "#94a3b8" : (data.clusterColor || data.color)} 
+                    transparent 
+                    opacity={opacity} 
+                />
             </mesh>
             <mesh position={[0, 0, 0.01]}>
-                <circleGeometry args={[hovered ? 1.3 : 1.1, 32]} />
-                <meshBasicMaterial color="#ffffff" />
+                <circleGeometry args={[scale - 0.1, 32]} />
+                <meshBasicMaterial color="#ffffff" transparent opacity={opacity} />
             </mesh>
             <DreiImage
                 url={data.logoUrl}
                 transparent
-                radius={hovered ? 1.2 : 1.0}
+                opacity={opacity}
+                radius={scale - 0.2}
                 position={[0, 0, 0.02]}
-                scale={hovered ? 2.4 : 2}
+                scale={imgScale}
             />
             {/* Optional name tag below the logo */}
-            {hovered && (
+            {hovered && !isDimmed && (
                 <Text
                     position={[0, -1.8, 0.02]}
                     fontSize={0.4}
@@ -105,6 +125,11 @@ export default function PartyClustering({
         y: 0,
         data: null,
     });
+    const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
+
+    const handleSelectCluster = (clusterId: string) => {
+        setSelectedCluster((prev) => (prev === clusterId ? null : clusterId));
+    };
 
     useEffect(() => {
         setPartyData(initialData);
@@ -187,7 +212,10 @@ export default function PartyClustering({
                 className="w-full relative touch-none bg-slate-50 rounded-xl overflow-hidden border border-slate-100"
                 style={{ height: "600px" }}
             >
-                <Canvas camera={{ position: [0, 0, 25], fov: 50 }}>
+                <Canvas 
+                    camera={{ position: [0, 0, 25], fov: 50 }} 
+                    onPointerMissed={() => setSelectedCluster(null)}
+                >
                     <ambientLight intensity={0.8} />
                     <pointLight position={[10, 10, 10]} intensity={1} />
                     <axesHelper args={[40]} />
@@ -202,7 +230,8 @@ export default function PartyClustering({
                                 depthWrite={false}
                                 side={THREE.DoubleSide}
                                 uniforms={{
-                                    color: { value: new THREE.Color(c.color) }
+                                    color: { value: new THREE.Color(c.color) },
+                                    uOpacityMult: { value: selectedCluster !== null && selectedCluster !== String(c.id) ? 0.0 : 1.0 }
                                 }}
                                 vertexShader={`
                                     varying vec3 vNormal;
@@ -213,10 +242,11 @@ export default function PartyClustering({
                                 `}
                                 fragmentShader={`
                                     uniform vec3 color;
+                                    uniform float uOpacityMult;
                                     varying vec3 vNormal;
                                     void main() {
                                         // Creates a volumetric soft fade-out from center to edges
-                                        float intensity = pow(abs(vNormal.z), 1.8) * 0.2;
+                                        float intensity = pow(abs(vNormal.z), 1.8) * 0.2 * uOpacityMult;
                                         gl_FragColor = vec4(color, intensity);
                                     }
                                 `}
@@ -229,6 +259,8 @@ export default function PartyClustering({
                             key={party.id}
                             data={party}
                             setTooltipInfo={setTooltipInfo}
+                            selectedCluster={selectedCluster}
+                            onSelect={handleSelectCluster}
                         />
                     ))}
 
@@ -249,10 +281,15 @@ export default function PartyClustering({
                         (clusterId) => {
                             const sampleParty = partyData.find((p) => p.cluster === clusterId);
                             if (!sampleParty) return null;
+                            const isDimmed = selectedCluster !== null && selectedCluster !== String(clusterId);
                             return (
-                                <div key={clusterId} className="flex items-center gap-2 mb-1.5 last:mb-0">
+                                <div 
+                                    key={clusterId} 
+                                    className={`flex items-center gap-2 mb-1.5 last:mb-0 cursor-pointer transition-opacity hover:opacity-100 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}
+                                    onClick={() => handleSelectCluster(String(clusterId))}
+                                >
                                     <div 
-                                        className="w-3 h-3 rounded-full" 
+                                        className="w-3 h-3 rounded-full shadow-sm" 
                                         style={{ backgroundColor: sampleParty.clusterColor || sampleParty.color }}
                                     />
                                     <span className="text-sm font-medium text-slate-700">กลุ่มที่ {clusterId}</span>
