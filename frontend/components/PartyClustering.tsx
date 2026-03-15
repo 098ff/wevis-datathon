@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Billboard, Text, Image as DreiImage } from "@react-three/drei";
+import * as THREE from "three";
 import { PartyData } from "../types";
 import { extractPartyColors } from "../utils/colors";
 
@@ -196,11 +197,29 @@ export default function PartyClustering({
                     {clusterCentroids.map((c) => (
                         <mesh key={`fog-${c.id}`} position={[c.x, c.y, c.z]}>
                             <sphereGeometry args={[c.radius, 32, 32]} />
-                            <meshBasicMaterial
-                                color={c.color}
+                            <shaderMaterial
                                 transparent
-                                opacity={0.15}
                                 depthWrite={false}
+                                side={THREE.DoubleSide}
+                                uniforms={{
+                                    color: { value: new THREE.Color(c.color) }
+                                }}
+                                vertexShader={`
+                                    varying vec3 vNormal;
+                                    void main() {
+                                        vNormal = normalize(normalMatrix * normal);
+                                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                                    }
+                                `}
+                                fragmentShader={`
+                                    uniform vec3 color;
+                                    varying vec3 vNormal;
+                                    void main() {
+                                        // Creates a volumetric soft fade-out from center to edges
+                                        float intensity = pow(abs(vNormal.z), 1.8) * 0.2;
+                                        gl_FragColor = vec4(color, intensity);
+                                    }
+                                `}
                             />
                         </mesh>
                     ))}
