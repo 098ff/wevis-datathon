@@ -350,7 +350,7 @@ export default function PartyClustering({
                             </div>
                             <div className="border-t border-slate-100 pt-2 mt-2">
                                 <div className="flex justify-between items-center">
-                                    <span className="font-medium">ความสำเร็จ:</span>
+                                    <span className="font-medium">จำนวนร่างกฏหมายที่เสนอและสำเร็จ:</span>
                                     <span className="text-slate-800">{tooltipInfo.data.metrics.successRate}%</span>
                                 </div>
                                 <div className="flex justify-between items-center">

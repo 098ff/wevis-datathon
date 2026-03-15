@@ -6,6 +6,7 @@ import {
     getVoteAbsenceData,
     getBillsData,
     getVizResultData,
+    getUnityData,
 } from "../utils/dataStore.js";
 import type {
     PartyClustering,
@@ -23,6 +24,7 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
     const trendVoteData = getTrendVoteData();
     const voteAbsenceData = getVoteAbsenceData();
     const vizResultData = getVizResultData();
+    const unityData = getUnityData();
 
     const clusteringData: PartyClustering[] = parties
         .filter((party) => vizResultData.some((r: any) => r.voter_party === party.name))
@@ -39,8 +41,11 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
         const vizRow = vizResultData.find(
             (r: any) => r.voter_party === party.name,
         ) as any;
+        const unityRow = unityData.find(
+            (r: any) => r.voter_party === party.name,
+        ) as any;
 
-        const unity = trendRow ? parseFloat(trendRow.avg_follow_pct) : 50;
+        const unity = unityRow ? parseFloat(unityRow.avg_unity_score) * 100 : 50;
         const attendance = absenceRow
             ? 100 - parseFloat(absenceRow.avg_absence_pct)
             : 50;

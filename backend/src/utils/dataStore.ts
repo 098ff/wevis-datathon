@@ -24,6 +24,7 @@ let entropyData: any[] = [];
 let trendVoteData: any[] = [];
 let voteAbsenceData: any[] = [];
 let vizResultData: any[] = [];
+let unityData: any[] = [];
 let partiesCache: Party[] = [];
 
 export const initDataStore = () => {
@@ -32,6 +33,7 @@ export const initDataStore = () => {
     trendVoteData = parseCsv("trend_vote.csv");
     voteAbsenceData = parseCsv("vote_absence.csv");
     vizResultData = parseCsv("viz_result.csv");
+    unityData = parseCsv("unity.csv");
     const sanitizeParty = (p: string) => {
         if (!p) return "";
         let name = p.trim();
@@ -70,4 +72,5 @@ export const getEntropyData = () => entropyData;
 export const getTrendVoteData = () => trendVoteData;
 export const getVoteAbsenceData = () => voteAbsenceData;
 export const getVizResultData = () => vizResultData;
+export const getUnityData = () => unityData;
 export const getParties = () => partiesCache;
