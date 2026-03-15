@@ -279,10 +279,10 @@ export default function StackedBarChart({
             <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="max-w-xl">
                     <h2 className="text-3xl font-extrabold text-slate-800 mb-3">
-                        Performance Breakdown (4 Years)
+                        Performance Breakdown (3 Years)
                     </h2>
                     <p className="text-slate-600 text-base leading-relaxed">
-                        เปรียบเทียบผลงานตลอด 1 วาระ (4 ปี) ของพรรคที่คุณสนใจ
+                        เปรียบเทียบผลงานตลอด 1 วาระ (3 ปี) ของพรรคที่คุณสนใจ
                         เทียบกับ 3 พรรคที่ทำผลงานได้ดีที่สุด
                         เพื่อให้เห็นภาพรวมและ Insight ที่ลึกขึ้น
                         (ชี้ที่กราฟเพื่อดูข้อมูล)
