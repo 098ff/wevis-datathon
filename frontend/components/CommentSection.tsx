@@ -5,6 +5,8 @@ import { MessageSquare, User } from "lucide-react";
 import { PartyData } from "../types";
 import { CommentDTO } from "../types/dto";
 import { getComments } from "../apis/comments";
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 
 interface CommentSectionProps {
     selectedPartyId?: string;
@@ -83,9 +85,16 @@ export default function CommentSection({
                         <MessageSquare className="w-6 h-6 text-blue-500" />
                         เสียงสะท้อนจากประชาชน
                     </h2>
-                    <p className="text-slate-500 text-sm">
+                    <p className="text-slate-500 text-sm mb-4">
                         ความคิดเห็นและข้อเสนอแนะต่อพรรคการเมือง
                     </p>
+                    <Link 
+                        href="/match" 
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                    >
+                        <Sparkles size={16} className="text-yellow-300" />
+                        ค้นหาพรรคไหนเหมาะกับคุณ?
+                    </Link>
                 </div>
 
                 <div className="w-full md:w-auto min-w-[200px]">

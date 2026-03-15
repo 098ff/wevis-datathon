@@ -54,3 +54,23 @@ export interface Comment {
     date: string;
     text: string;
 }
+
+export type PartyStance = "yes" | "no";
+
+export interface MatchComment {
+    id: string;
+    author: string;
+    text: string;
+    timestamp: string;
+    avatarUrl?: string;
+    likeCount: number;
+}
+
+export interface MatchBill {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    userAgreementPct: number; // Mock % of users who voted "Yes"
+    partyStances: Record<string, PartyStance>; // Party Name -> "yes" | "no"
+}
