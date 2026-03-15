@@ -12,7 +12,10 @@ export interface Metric {
 export interface PartyClustering {
     id: string;
     name: string;
-    cluster: number;
+    cluster: number | string;
+    pc1: number;
+    pc2: number;
+    pc3: number;
     color: string;
     scoreX: number;
     scoreY: number;

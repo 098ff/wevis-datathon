@@ -5,6 +5,7 @@ import {
     getTrendVoteData,
     getVoteAbsenceData,
     getBillsData,
+    getVizResultData,
 } from "../utils/dataStore.js";
 import type {
     PartyClustering,
@@ -21,6 +22,7 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
     const entropyData = getEntropyData();
     const trendVoteData = getTrendVoteData();
     const voteAbsenceData = getVoteAbsenceData();
+    const vizResultData = getVizResultData();
 
     const clusteringData: PartyClustering[] = parties.map((party, index) => {
         const entropyRow = entropyData.find(
@@ -32,6 +34,9 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
         const absenceRow = voteAbsenceData.find(
             (r: any) => r.voter_party === party.name,
         ) as any;
+        const vizRow = vizResultData.find(
+            (r: any) => r.voter_party === party.name,
+        ) as any;
 
         const unity = trendRow ? parseFloat(trendRow.avg_follow_pct) : 50;
         const attendance = absenceRow
@@ -41,10 +46,19 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
             ? parseFloat(entropyRow.avg_entropy_bits)
             : 0.5;
 
+        // Extract true cluster and PC data or fallback to simulated ones
+        const cluster = vizRow ? parseInt(vizRow.Cluster) : (index % 3) + 1;
+        const pc1 = vizRow ? parseFloat(vizRow.PC1) : 0;
+        const pc2 = vizRow ? parseFloat(vizRow.PC2) : 0;
+        const pc3 = vizRow ? parseFloat(vizRow.PC3) : 0;
+
         return {
             id: party.id,
             name: party.name,
-            cluster: (index % 3) + 1,
+            cluster,
+            pc1,
+            pc2,
+            pc3,
             color: index % 2 === 0 ? "#ef4444" : "#3b82f6",
             scoreX: unity,
             scoreY: attendance,

@@ -2,6 +2,7 @@ import { parse } from "csv-parse/sync";
 import * as fs from "fs";
 import * as path from "path";
 import type { Party } from "../types/index.js";
+import { party_list } from "../../data/pary_list.js";
 
 const dataDir = path.join(process.cwd(), "data");
 
@@ -22,6 +23,7 @@ let billsData: any[] = [];
 let entropyData: any[] = [];
 let trendVoteData: any[] = [];
 let voteAbsenceData: any[] = [];
+let vizResultData: any[] = [];
 let partiesCache: Party[] = [];
 
 export const initDataStore = () => {
@@ -29,33 +31,7 @@ export const initDataStore = () => {
     entropyData = parseCsv("entropy.csv");
     trendVoteData = parseCsv("trend_vote.csv");
     voteAbsenceData = parseCsv("vote_absence.csv");
-    const party_list = [
-        'พรรคประชาธิปัตย์', 'พรรคประชากรไทย', 'พรรคความหวังใหม่', 
-        'พรรคเครือข่ายชาวนาแห่งประเทศไทย', 'พรรคเพื่อไทย', 'พรรคชาติพัฒนา', 
-        'พรรคชาติไทยพัฒนา', 'พรรคอนาคตไทย', 'พรรคภูมิใจไทย', 
-        'พรรคสังคมประชาธิปไตยไทย', 'พรรครักชาติ', 'พรรคประชาธิปไตยใหม่', 
-        'พรรคพลังบูรพา', 'พรรคครูไทยเพื่อประชาชน', 'พรรคพลังท้องถิ่นไท', 
-        'พรรคประชาชน', 'พรรคไทยก้าวใหม่', 'พรรคเสรีรวมไทย', 
-        'พรรครักษ์ธรรม', 'พรรคพลังประชาธิปไตย', 'พรรคพลังสุราษฎร์', 
-        'พรรคพลังไทยรักชาติ', 'พรรคเพื่อชีวิตใหม่', 'พรรคทางเลือกใหม่', 
-        'พรรคเศรษฐกิจ', 'พรรคสร้างอนาคตไทย', 'พรรคพลังธรรมใหม่', 
-        'พรรคไทยธรรม', 'พรรครวมพลัง', 'พรรคไทยพร้อม', 
-        'พรรคปวงชนไทย', 'พรรคเพื่อชาติไทย', 'พรรคก้าวอิสระ', 
-        'พรรคประชาชาติ', 'พรรคแผ่นดินธรรม', 'พรรคคลองไทย', 
-        'พรรคพลังประชารัฐ', 'พรรคเศรษฐกิจใหม่', 'พรรคพลังสังคม', 
-        'พรรคเป็นธรรม', 'พรรคพลังเพื่อไทย', 'พรรคประชาไทย', 
-        'พรรคกรีน', 'พรรควิชชั่นใหม่', 'พรรคพลวัต', 
-        'พรรคกล้าธรรม', 'พรรคไทยรวมไทย', 'พรรคกล้า', 
-        'พรรคฟิวชัน', 'พรรคพลังสังคมใหม่', 'พรรคไทยสร้างไทย', 
-        'พรรคมิติใหม่', 'พรรครวมไทยสร้างชาติ', 'พรรคไทยสมาร์ท', 
-        'พรรคไทยภักดี', 'พรรคไทยพิทักษ์ธรรม', 'พรรคไทยชนะ', 
-        'พรรคไทรวมพลัง', 'พรรคราษฎร์วิถี', 'พรรคโอกาสใหม่', 
-        'พรรคท้องที่ไทย', 'พรรคใหม่', 'พรรคแรงงานสร้างชาติ', 
-        'พรรคไทยก้าวหน้า', 'พรรคตะวันใหม่', 'พรรคพร้อม', 
-        'พรรครวมใจไทย', 'พรรคสัมมาธิปไตย', 'พรรครักภูเก็ต', 
-        'พรรคประชาอาสาชาติ', 'พรรคไทยทรัพย์ทวี', 'พรรครวมพลังประชาชน', 
-        'พรรคอนาคตไกล', 'พรยยางพาราไทย', 'พรรคเพื่อบ้านเมือง'
-    ]
+    vizResultData = parseCsv("viz_result.csv");
     const sanitizeParty = (p: string) => {
         if (!p) return "";
         let name = p.trim();
@@ -78,7 +54,13 @@ export const initDataStore = () => {
                 p &&
                 p !== "" &&
                 p !== "สมาชิกวุฒิสภา" &&
-                p !== "ไม่สังกัดพรรค",
+                p !== "ไม่สังกัดพรรค" &&
+                p !== "ประชาอาสาชาติ" && // Assuming these are also parties to exclude
+                p !== "ไทยทรัพย์ทวี" &&
+                p !== "รวมพลังประชาชน" &&
+                p !== "อนาคตไกล" &&
+                p !== "ยางพาราไทย" && // Corrected party name
+                p !== "เพื่อบ้านเมือง",
         )
         .map((name, index) => ({ id: `p${index + 1}`, name }));
 };
@@ -87,4 +69,5 @@ export const getBillsData = () => billsData;
 export const getEntropyData = () => entropyData;
 export const getTrendVoteData = () => trendVoteData;
 export const getVoteAbsenceData = () => voteAbsenceData;
+export const getVizResultData = () => vizResultData;
 export const getParties = () => partiesCache;
