@@ -203,7 +203,7 @@ const StackedBarGroup = ({ party }: { party: PartyPerformanceDTO }) => {
                             ></span>
                             {tooltip.value}{" "}
                             <span className="text-sm font-normal text-slate-300">
-                                ครั้ง/ฉบับ
+                                ครั้ง
                             </span>
                         </div>
                     </div>
