@@ -61,7 +61,7 @@ function PartyNode({
         >
             <mesh>
                 <circleGeometry args={[hovered ? 1.4 : 1.2, 32]} />
-                <meshBasicMaterial color={data.color} />
+                <meshBasicMaterial color={data.clusterColor || data.color} />
             </mesh>
             <mesh position={[0, 0, 0.01]}>
                 <circleGeometry args={[hovered ? 1.3 : 1.1, 32]} />
@@ -130,6 +130,8 @@ export default function PartyClustering({
                 <Canvas camera={{ position: [0, 0, 25], fov: 50 }}>
                     <ambientLight intensity={0.8} />
                     <pointLight position={[10, 10, 10]} intensity={1} />
+                    <axesHelper args={[40]} />
+                    <gridHelper args={[60, 60, '#cbd5e1', '#f1f5f9']} position={[0, -20, 0]} />
                     
                     {partyData.map((party) => (
                         <PartyNode
@@ -160,7 +162,7 @@ export default function PartyClustering({
                                 <div key={clusterId} className="flex items-center gap-2 mb-1.5 last:mb-0">
                                     <div 
                                         className="w-3 h-3 rounded-full" 
-                                        style={{ backgroundColor: sampleParty.color }}
+                                        style={{ backgroundColor: sampleParty.clusterColor || sampleParty.color }}
                                     />
                                     <span className="text-sm font-medium text-slate-700">กลุ่มที่ {clusterId}</span>
                                 </div>
@@ -183,7 +185,7 @@ export default function PartyClustering({
                                 src={tooltipInfo.data.logoUrl}
                                 alt={tooltipInfo.data.name}
                                 className="w-8 h-8 rounded-full border-2"
-                                style={{ borderColor: tooltipInfo.data.color }}
+                                style={{ borderColor: tooltipInfo.data.clusterColor || tooltipInfo.data.color }}
                             />
                             <h4
                                 className="font-bold text-slate-800"
@@ -204,26 +206,18 @@ export default function PartyClustering({
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="font-medium">
-                                    PC1:
+                                    ประเภทร่างกฏหมาย:
                                 </span>
                                 <span className="text-slate-800">
-                                    {tooltipInfo.data.pc1.toFixed(3)}
+                                    {tooltipInfo.data.metrics.billTypes}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="font-medium">
-                                    PC2:
+                                    ความเป็นเอกภาพ:
                                 </span>
                                 <span className="text-slate-800">
-                                    {tooltipInfo.data.pc2.toFixed(3)}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="font-medium">
-                                    PC3:
-                                </span>
-                                <span className="text-slate-800">
-                                    {tooltipInfo.data.pc3.toFixed(3)}
+                                    {tooltipInfo.data.metrics.unity}%
                                 </span>
                             </div>
                             <div className="border-t border-slate-100 pt-2 mt-2">

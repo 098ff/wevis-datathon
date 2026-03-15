@@ -6,6 +6,7 @@ export interface PartyData {
     pc2: number;
     pc3: number;
     color: string;
+    clusterColor?: string;
     scoreX: number;
     scoreY: number;
     logoUrl: string;

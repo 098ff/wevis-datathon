@@ -17,6 +17,7 @@ export interface PartyClustering {
     pc2: number;
     pc3: number;
     color: string;
+    clusterColor?: string;
     scoreX: number;
     scoreY: number;
     logoUrl: string;

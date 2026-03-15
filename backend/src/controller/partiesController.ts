@@ -24,7 +24,9 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
     const voteAbsenceData = getVoteAbsenceData();
     const vizResultData = getVizResultData();
 
-    const clusteringData: PartyClustering[] = parties.map((party, index) => {
+    const clusteringData: PartyClustering[] = parties
+        .filter((party) => vizResultData.some((r: any) => r.voter_party === party.name))
+        .map((party, index) => {
         const entropyRow = entropyData.find(
             (r: any) => r.voter_party === party.name,
         ) as any;
@@ -52,6 +54,15 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
         const pc2 = vizRow ? parseFloat(vizRow.PC2) : 0;
         const pc3 = vizRow ? parseFloat(vizRow.PC3) : 0;
 
+        const clusterColors = [
+            "#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6",
+            "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#6366f1"
+        ];
+        // Ensure cluster ID directly corresponds to a specific color
+        const colorIndex = isNaN(cluster) ? index % clusterColors.length : cluster % clusterColors.length;
+        const clusterColor = clusterColors[colorIndex] || "#3b82f6";
+        const color = index % 2 === 0 ? "#ef4444" : "#3b82f6"; // Reverting default Party color logic
+
         return {
             id: party.id,
             name: party.name,
@@ -59,7 +70,8 @@ export const getPartiesClusteringHandler = (req: Request, res: Response) => {
             pc1,
             pc2,
             pc3,
-            color: index % 2 === 0 ? "#ef4444" : "#3b82f6",
+            color,
+            clusterColor,
             scoreX: unity,
             scoreY: attendance,
             logoUrl: `/partys/${party.name}.jpg`,
