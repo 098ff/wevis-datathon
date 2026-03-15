@@ -8,6 +8,10 @@ import { extractPartyColors } from "../utils/colors";
 export type { PartyData };
 export { extractPartyColors };
 
+import { SimulationNodeDatum } from "d3";
+
+type SimNode = PartyData & SimulationNodeDatum;
+
 export default function PartyClustering({
     initialData = [],
 }: {
@@ -41,29 +45,60 @@ export default function PartyClustering({
         const svg = d3.select(svgRef.current);
         svg.selectAll("*").remove();
 
-        const g = svg
+        svg
             .attr("viewBox", `0 0 ${width} ${height}`)
             .attr("width", "100%")
-            .attr("height", "100%")
-            .append("g")
+            .attr("height", "100%");
+
+        // layer สำหรับ chart
+        const chartLayer = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
-        // Scales
-        const xScale = d3.scaleLinear().domain([0, 100]).range([0, innerWidth]);
-        const yScale = d3
-            .scaleLinear()
-            .domain([0, 100])
+        // layer สำหรับ legend (ไม่ zoom)
+        const legendLayer = svg.append("g")
+            .attr("transform", `translate(${width - 120}, ${margin.top})`);
+
+        const zoom = d3.zoom<SVGSVGElement, unknown>()
+            .scaleExtent([0.5, 8])
+            .on("zoom", (event) => {
+
+                chartLayer.attr("transform", event.transform);
+
+                const k = event.transform.k;
+
+                // ยิ่ง zoom in collision ยิ่งใหญ่
+                const collide = d3.forceCollide(nodeRadius * k * 0.8);
+
+                simulation.force("collide", collide);
+
+                simulation.alpha(0.3).restart();
+            });
+
+        svg.call(zoom);
+
+        const g = chartLayer;
+
+        const xExtent = d3.extent(partyData, d => d.scoreX) as [number, number];
+        const yExtent = d3.extent(partyData, d => d.scoreY) as [number, number];
+
+        const xScale = d3.scaleLinear()
+            .domain(xExtent)
+            .nice()
+            .range([0, innerWidth]);
+
+        const yScale = d3.scaleLinear()
+            .domain(yExtent)
+            .nice()
             .range([innerHeight, 0]);
 
-        // Draw clusters (background bubbles)
         const clusters = Array.from(
-            d3.group(partyData, (d) => d.cluster).entries(),
+            d3.group(partyData, d => d.cluster).entries(),
         );
 
         clusters.forEach(([clusterId, parties]) => {
-            // Calculate cluster center
-            const centerX = d3.mean(parties, (d) => d.scoreX) || 50;
-            const centerY = d3.mean(parties, (d) => d.scoreY) || 50;
+
+            const centerX = d3.mean(parties, d => d.scoreX) || 50;
+            const centerY = d3.mean(parties, d => d.scoreY) || 50;
 
             g.append("circle")
                 .attr("cx", xScale(centerX))
@@ -75,7 +110,6 @@ export default function PartyClustering({
                 .attr("stroke-dasharray", "4,4")
                 .transition()
                 .duration(1200)
-                .ease(d3.easeBounceOut)
                 .attr("r", 110);
 
             g.append("text")
@@ -84,17 +118,12 @@ export default function PartyClustering({
                 .attr("text-anchor", "middle")
                 .attr("fill", "#64748b")
                 .attr("font-size", "14px")
-                .text(`กลุ่มที่ ${clusterId}`)
-                .attr("opacity", 0)
-                .transition()
-                .delay(800)
-                .duration(800)
-                .attr("opacity", 1);
+                .text(`กลุ่มที่ ${clusterId}`);
         });
 
-        const nodeRadius = 25; // Fixed size for all parties
+        const nodeRadius = 25;
+        const logoSize = nodeRadius * 1.4;
 
-        // Draw parties
         const nodes = g
             .selectAll(".node")
             .data(partyData)
@@ -103,41 +132,57 @@ export default function PartyClustering({
             .attr("class", "node")
             .attr(
                 "transform",
-                (d) => `translate(${xScale(d.scoreX)},${yScale(d.scoreY)})`,
+                d => `translate(${xScale(d.scoreX)},${yScale(d.scoreY)})`
             )
             .style("cursor", "pointer")
             .on("mouseover", (event, d) => {
                 const [x, y] = d3.pointer(event, containerRef.current);
                 setTooltipInfo({
                     visible: true,
-                    x: x,
-                    y: y,
+                    x,
+                    y,
                     data: d,
                 });
-                d3.select(event.currentTarget)
-                    .select("circle")
-                    .transition()
-                    .duration(200)
-                    .attr("stroke-width", 5)
-                    .attr("r", nodeRadius + 5);
             })
             .on("mousemove", (event) => {
                 const [x, y] = d3.pointer(event, containerRef.current);
                 setTooltipInfo((prev) => ({ ...prev, x, y }));
             })
-            .on("mouseout", (event) => {
+            .on("mouseout", () => {
                 setTooltipInfo((prev) => ({ ...prev, visible: false }));
-                d3.select(event.currentTarget)
-                    .select("circle")
-                    .transition()
-                    .duration(200)
-                    .attr("stroke-width", 3)
-                    .attr("r", nodeRadius);
             });
 
-        // Add defs for clip path
+        const simData = partyData as SimNode[];
+
+        const simulation = d3.forceSimulation<SimNode>(simData)
+            .force(
+                "x",
+                d3.forceX<SimNode>((d) => xScale(d.scoreX)).strength(0.9)
+            )
+            .force(
+                "y",
+                d3.forceY<SimNode>((d) => yScale(d.scoreY)).strength(0.9)
+            )
+            .force(
+                "charge",
+                d3.forceManyBody().strength(-15)
+            )
+            .force(
+                "collide",
+                d3.forceCollide(nodeRadius + 4)
+            )
+            .alphaDecay(0.02)
+            .on("tick", () => {
+                nodes.attr("transform", (d: SimNode) => `translate(${d.x},${d.y})`);
+            });
+
+        for (let i = 0; i < 200; i++) simulation.tick();
+
+        nodes.attr("transform", (d: SimNode) => `translate(${d.x},${d.y})`);
+
         const defs = g.append("defs");
-        nodes.each(function (d, i) {
+
+        nodes.each(function (d) {
             defs.append("clipPath")
                 .attr("id", `clip-${d.id}`)
                 .append("circle")
@@ -146,88 +191,48 @@ export default function PartyClustering({
 
         nodes
             .append("circle")
-            .attr("r", 0)
+            .attr("r", nodeRadius)
             .attr("fill", "#fff")
-            .attr("stroke", (d) => d.color)
-            .attr("stroke-width", 3)
-            .style("filter", "drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))")
-            .transition()
-            .delay((d, i) => 800 + i * 150)
-            .duration(1200)
-            .ease(d3.easeElasticOut)
-            .attr("r", nodeRadius);
+            .attr("stroke", d => d.color)
+            .attr("stroke-width", 3);
 
         nodes
             .append("image")
-            .attr("href", (d) => d.logoUrl)
-            .each(function (d) {
-                const img = new Image();
-                img.src = d.logoUrl;
-
-                img.onerror = () => {
-                console.log("❌ Missing logo:", d.name, d.logoUrl);
-                };
-            })
-            .attr("x", -nodeRadius)
-            .attr("y", -nodeRadius)
-            .attr("width", nodeRadius * 2)
-            .attr("height", nodeRadius * 2)
-            .attr("clip-path", (d) => `url(#clip-${d.id})`)
-            .attr("opacity", 0)
-            .transition()
-            .delay((d, i) => 1200 + i * 150)
-            .duration(600)
-            .attr("opacity", 1);
+            .attr("href", d => d.logoUrl)
+            .attr("x", -logoSize / 2)
+            .attr("y", -logoSize / 2)
+            .attr("width", logoSize)
+            .attr("height", logoSize)
+            .attr("clip-path", d => `url(#clip-${d.id})`);
 
         nodes
             .append("text")
             .attr("text-anchor", "middle")
             .attr("y", nodeRadius + 18)
-            .attr("fill", "#334155")
             .attr("font-size", "12px")
-            .attr("font-weight", "600")
-            .text((d) => d.name)
-            .attr("opacity", 0)
-            .transition()
-            .delay((d, i) => 1200 + i * 150)
-            .duration(600)
-            .attr("opacity", 1);
+            .attr("fill", "#334155")
+            .text(d => d.name);
 
-        // Draw Legend
-        const legend = g
-            .append("g")
-            .attr("class", "legend")
-            .attr("transform", `translate(${innerWidth + 20}, 0)`);
+        // legend (fixed)
+        const legend = legendLayer;
 
         clusters.forEach(([clusterId, parties], i) => {
-            const legendRow = legend
-                .append("g")
-                .attr("transform", `translate(0, ${i * 25})`)
-                .attr("opacity", 0);
 
-            legendRow
-                .append("circle")
-                .attr("cx", 0)
-                .attr("cy", -4)
+            const row = legend.append("g")
+                .attr("transform", `translate(0, ${i * 25})`);
+
+            row.append("circle")
                 .attr("r", 6)
-                .attr("fill", parties[0].color)
-                .attr("opacity", 0.8);
+                .attr("fill", parties[0].color);
 
-            legendRow
-                .append("text")
+            row.append("text")
                 .attr("x", 12)
-                .attr("y", 0)
+                .attr("y", 4)
                 .attr("font-size", "12px")
                 .attr("fill", "#64748b")
-                .attr("alignment-baseline", "middle")
                 .text(`กลุ่มที่ ${clusterId}`);
-
-            legendRow
-                .transition()
-                .delay(1800 + i * 200)
-                .duration(600)
-                .attr("opacity", 1);
         });
+
     }, [dimensions, partyData]);
 
     return (
