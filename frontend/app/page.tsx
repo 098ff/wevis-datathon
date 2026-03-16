@@ -10,6 +10,7 @@ import { PartyData } from "@/types";
 import SpiderChart from "@/components/SpiderChart";
 import StackedBarChart from "@/components/StackedBarChart";
 import CommentSection from "@/components/CommentSection";
+import { partyClusteringData, stackedBarChartData } from "@/data/mockData";
 
 export default function Home() {
     const [selectedPartyId, setSelectedPartyId] = useState("p1");
@@ -73,8 +74,9 @@ export default function Home() {
                     </div>
                     <div id="performance">
                         <StackedBarChart
-                            selectedPartyId={selectedPartyId}
-                            globalPartyData={globalPartyData}
+                            selectedPartyId={"p1"}
+                            globalPartyData={partyClusteringData}
+                            initialPerformanceData={stackedBarChartData}
                         />
                     </div>
                     <div id="comments">

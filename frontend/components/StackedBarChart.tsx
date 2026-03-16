@@ -28,7 +28,7 @@ interface TooltipInfo {
     value: number
 }
 
-const StackedBarGroup = ({ party }: { party: PartyPerformanceDTO }) => {
+const StackedBarGroup = ({ party, isMock }: { party: PartyPerformanceDTO; isMock?: boolean }) => {
     const svgRef = useRef<SVGSVGElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [tooltip, setTooltip] = useState<TooltipInfo>({
@@ -158,12 +158,25 @@ const StackedBarGroup = ({ party }: { party: PartyPerformanceDTO }) => {
             className="flex flex-col items-center bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative"
         >
             <div className="flex items-center justify-center mb-4 gap-3 w-full">
-                <img
-                    src={party.logoUrl}
-                    alt={party.name}
-                    className="w-12 h-12 rounded-full border-[3px] shadow-sm object-cover shrink-0"
-                    style={{ borderColor: party.color }}
-                />
+                {isMock ? (
+                    <div
+                        className="w-12 h-12 rounded-full border-[3px] shadow-sm shrink-0 flex items-center justify-center font-bold text-xs p-1 text-center"
+                        style={{
+                            borderColor: party.color,
+                            backgroundColor: `${party.color}15`,
+                            color: party.color,
+                        }}
+                    >
+                        {party.name.replace("พรรค ","")}
+                    </div>
+                ) : (
+                    <img
+                        src={party.logoUrl}
+                        alt={party.name}
+                        className="w-12 h-12 rounded-full border-[3px] shadow-sm object-cover shrink-0"
+                        style={{ borderColor: party.color }}
+                    />
+                )}
                 <h4
                     className="font-bold text-lg truncate"
                     style={{ color: party.color }}
@@ -218,35 +231,49 @@ const StackedBarGroup = ({ party }: { party: PartyPerformanceDTO }) => {
 interface StackedBarChartProps {
     selectedPartyId?: string
     globalPartyData?: PartyData[]
+    initialPerformanceData?: PartyPerformanceDTO[]
 }
 
 export default function StackedBarChart({
     selectedPartyId = "p1",
     globalPartyData = [],
+    initialPerformanceData = [],
 }: StackedBarChartProps = {}) {
     const [performanceData, setPerformanceData] = useState<
         PartyPerformanceDTO[]
-    >([])
+    >(initialPerformanceData)
 
     useEffect(() => {
+        if (initialPerformanceData.length > 0) {
+            setPerformanceData(initialPerformanceData)
+            return
+        }
+
         getPartyPerformance()
             .then(setPerformanceData)
             .catch((err) =>
                 console.error("Failed to load performance data", err),
             )
-    }, [])
+    }, [initialPerformanceData])
 
-    // Map the global color back to our mock performance data
-    const getPartyColor = (id: string, fallback: string) => {
+    // Map the global properties back to our performance data
+    const getPartyInfo = (id: string, defaultInfo: { color: string; name: string; logoUrl: string }) => {
         const p = globalPartyData.find((gp) => gp.id === id)
-        return p ? p.color : fallback
+        return {
+            color: p ? p.color : defaultInfo.color,
+            name: p ? p.name : defaultInfo.name,
+            logoUrl: p ? p.logoUrl : defaultInfo.logoUrl,
+        }
     }
 
     const enhancedData = useMemo(() => {
-        return performanceData.map((p) => ({
-            ...p,
-            color: getPartyColor(p.id, p.color),
-        }))
+        return performanceData.map((p) => {
+            const info = getPartyInfo(p.id, { color: p.color, name: p.name, logoUrl: p.logoUrl })
+            return {
+                ...p,
+                ...info,
+            }
+        })
     }, [performanceData, globalPartyData])
 
     const selectedParty =
@@ -273,6 +300,8 @@ export default function StackedBarChart({
             </div>
         )
     }
+
+    const isMock = initialPerformanceData.length > 0
 
     return (
         <section className="bg-slate-50 p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200 mt-8">
@@ -333,7 +362,10 @@ export default function StackedBarChart({
                     </h3>
                     <div className="flex justify-center">
                         <div className="w-full max-w-lg transform hover:scale-[1.02] transition-transform duration-300">
-                            <StackedBarGroup party={selectedParty} />
+                            <StackedBarGroup
+                                party={selectedParty}
+                                isMock={isMock}
+                            />
                         </div>
                     </div>
                 </div>
@@ -346,7 +378,11 @@ export default function StackedBarChart({
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {top3Parties.map((party) => (
-                            <StackedBarGroup key={party.id} party={party} />
+                            <StackedBarGroup
+                                key={party.id}
+                                party={party}
+                                isMock={isMock}
+                            />
                         ))}
                     </div>
                 </div>

@@ -9,13 +9,13 @@ export const mockBills: MatchBill[] = [
         category: "สังคม",
         userAgreementPct: 82,
         partyStances: {
-            "ประชาชน": "yes",
-            "เพื่อไทย": "yes",
-            "ภูมิใจไทย": "yes",
-            "ประชาธิปัตย์": "yes",
-            "รวมไทยสร้างชาติ": "yes",
-            "พลังประชารัฐ": "yes",
-            "ประชาชาติ": "no", // Assuming some diversity in stances for calculation testing
+            "พรรค A": "yes",
+            "พรรค B": "yes",
+            "พรรค C": "yes",
+            "พรรค D": "yes",
+            "พรรค E": "yes",
+            "พรรค F": "yes",
+            "พรรค G": "no",
         }
     },
     {
@@ -25,13 +25,13 @@ export const mockBills: MatchBill[] = [
         category: "สิ่งแวดล้อม",
         userAgreementPct: 95,
         partyStances: {
-            "ประชาชน": "yes",
-            "เพื่อไทย": "yes",
-            "ภูมิใจไทย": "yes",
-            "ประชาธิปัตย์": "yes",
-            "รวมไทยสร้างชาติ": "yes",
-            "พลังประชารัฐ": "yes",
-            "ประชาชาติ": "yes",
+            "พรรค A": "yes",
+            "พรรค B": "yes",
+            "พรรค C": "yes",
+            "พรรค D": "yes",
+            "พรรค E": "yes",
+            "พรรค F": "yes",
+            "พรรค G": "yes",
         }
     },
     {
@@ -41,13 +41,13 @@ export const mockBills: MatchBill[] = [
         category: "เศรษฐกิจ",
         userAgreementPct: 75,
         partyStances: {
-            "ประชาชน": "yes",
-            "เพื่อไทย": "yes",
-            "ภูมิใจไทย": "no",
-            "ประชาธิปัตย์": "no",
-            "รวมไทยสร้างชาติ": "no",
-            "พลังประชารัฐ": "no",
-            "ประชาชาติ": "no",
+            "พรรค A": "yes",
+            "พรรค B": "yes",
+            "พรรค C": "no",
+            "พรรค D": "no",
+            "พรรค E": "no",
+            "พรรค F": "no",
+            "พรรค G": "no",
         }
     },
     {
@@ -57,13 +57,13 @@ export const mockBills: MatchBill[] = [
         category: "การเมือง",
         userAgreementPct: 68,
         partyStances: {
-            "ประชาชน": "yes",
-            "เพื่อไทย": "no", // Mock stances
-            "ภูมิใจไทย": "no",
-            "ประชาธิปัตย์": "no",
-            "รวมไทยสร้างชาติ": "no",
-            "พลังประชารัฐ": "no",
-            "ประชาชาติ": "yes",
+            "พรรค A": "yes",
+            "พรรค B": "no",
+            "พรรค C": "no",
+            "พรรค D": "no",
+            "พรรค E": "no",
+            "พรรค F": "no",
+            "พรรค G": "yes",
         }
     },
     {
@@ -73,13 +73,13 @@ export const mockBills: MatchBill[] = [
         category: "สวัสดิการ",
         userAgreementPct: 89,
         partyStances: {
-            "ประชาชน": "yes",
-            "เพื่อไทย": "yes",
-            "ภูมิใจไทย": "yes",
-            "ประชาธิปัตย์": "yes",
-            "รวมไทยสร้างชาติ": "yes",
-            "พลังประชารัฐ": "yes",
-            "ประชาชาติ": "yes",
+            "พรรค A": "yes",
+            "พรรค B": "yes",
+            "พรรค C": "yes",
+            "พรรค D": "yes",
+            "พรรค E": "yes",
+            "พรรค F": "yes",
+            "พรรค G": "yes",
         }
     },
     {
@@ -89,13 +89,13 @@ export const mockBills: MatchBill[] = [
         category: "การเมือง",
         userAgreementPct: 72,
         partyStances: {
-            "ประชาชน": "yes",
-            "เพื่อไทย": "no",
-            "ภูมิใจไทย": "no",
-            "ประชาธิปัตย์": "no",
-            "รวมไทยสร้างชาติ": "no",
-            "พลังประชารัฐ": "no",
-            "ประชาชาติ": "yes",
+            "พรรค A": "yes",
+            "พรรค B": "no",
+            "พรรค C": "no",
+            "พรรค D": "no",
+            "พรรค E": "no",
+            "พรรค F": "no",
+            "พรรค G": "yes",
         }
     },
     {
@@ -105,13 +105,13 @@ export const mockBills: MatchBill[] = [
         category: "การเมือง",
         userAgreementPct: 65,
         partyStances: {
-            "ประชาชน": "yes",
-            "เพื่อไทย": "yes",
-            "ภูมิใจไทย": "yes",
-            "ประชาธิปัตย์": "yes",
-            "รวมไทยสร้างชาติ": "no",
-            "พลังประชารัฐ": "no",
-            "ประชาชาติ": "yes",
+            "พรรค A": "yes",
+            "พรรค B": "yes",
+            "พรรค C": "yes",
+            "พรรค D": "yes",
+            "พรรค E": "no",
+            "พรรค F": "no",
+            "พรรค G": "yes",
         }
     },
     {
@@ -121,13 +121,13 @@ export const mockBills: MatchBill[] = [
         category: "แรงงาน",
         userAgreementPct: 88,
         partyStances: {
-            "ประชาชน": "yes",
-            "เพื่อไทย": "yes",
-            "ภูมิใจไทย": "no",
-            "ประชาธิปัตย์": "yes",
-            "รวมไทยสร้างชาติ": "yes",
-            "พลังประชารัฐ": "yes",
-            "ประชาชาติ": "yes",
+            "พรรค A": "yes",
+            "พรรค B": "yes",
+            "พรรค C": "no",
+            "พรรค D": "yes",
+            "พรรค E": "yes",
+            "พรรค F": "yes",
+            "พรรค G": "yes",
         }
     },
     {
@@ -137,13 +137,13 @@ export const mockBills: MatchBill[] = [
         category: "เศรษฐกิจ",
         userAgreementPct: 91,
         partyStances: {
-            "ประชาชน": "yes",
-            "เพื่อไทย": "yes",
-            "ภูมิใจไทย": "yes",
-            "ประชาธิปัตย์": "yes",
-            "รวมไทยสร้างชาติ": "yes",
-            "พลังประชารัฐ": "yes",
-            "ประชาชาติ": "yes",
+            "พรรค A": "yes",
+            "พรรค B": "yes",
+            "พรรค C": "yes",
+            "พรรค D": "yes",
+            "พรรค E": "yes",
+            "พรรค F": "yes",
+            "พรรค G": "yes",
         }
     },
     {
@@ -153,13 +153,13 @@ export const mockBills: MatchBill[] = [
         category: "การเมือง",
         userAgreementPct: 54,
         partyStances: {
-            "ประชาชน": "yes",
-            "เพื่อไทย": "yes",
-            "ภูมิใจไทย": "no",
-            "ประชาธิปัตย์": "no",
-            "รวมไทยสร้างชาติ": "no",
-            "พลังประชารัฐ": "no",
-            "ประชาชาติ": "yes",
+            "พรรค A": "yes",
+            "พรรค B": "yes",
+            "พรรค C": "no",
+            "พรรค D": "no",
+            "พรรค E": "no",
+            "พรรค F": "no",
+            "พรรค G": "yes",
         }
     }
 ];
@@ -177,5 +177,4 @@ export const mockComments: Record<string, MatchComment[]> = {
         { id: "c4", author: "LocalBrewer", text: "ถ้าผ่านจะช่วยเกษตรกรท้องถิ่นได้เยอะมากเลย ไม่ต้องให้ทุนใหญ่ผูกขาด", timestamp: "3 ชม.ที่แล้ว", likeCount: 211 },
         { id: "c5", author: "SaveHealth", text: "กังวลเรื่องการควบคุมคุณภาพแฮะ", timestamp: "4 ชม.ที่แล้ว", likeCount: 45 }
     ]
-    // Other bills will default to an empty array if not defined here
 };

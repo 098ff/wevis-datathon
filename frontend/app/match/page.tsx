@@ -81,6 +81,7 @@ export default function MatchGame() {
                                 userVotes={userVotes}
                                 bills={mockBills}
                                 onRestart={handleRestart}
+                                isMock={true}
                             />
                         ) : (
                             <div className="w-full h-[550px] relative [perspective:1000px]">

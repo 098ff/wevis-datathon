@@ -11,6 +11,7 @@ interface MatchSummaryProps {
     userVotes: Record<string, PartyStance>;
     bills: MatchBill[];
     onRestart: () => void;
+    isMock?: boolean;
 }
 
 const getPartyLogo = (name: string) => {
@@ -26,7 +27,23 @@ const getPartyLogo = (name: string) => {
     return logoMap[name] || "/partys/default.jpg";
 };
 
-export default function MatchSummary({ results, userVotes, bills, onRestart }: MatchSummaryProps) {
+const getPartyColor = (name: string) => {
+    const colorMap: Record<string, string> = {
+        "พรรค A": "#f97316",
+        "พรรค B": "#ef4444",
+        "พรรค C": "#1d4ed8",
+        "พรรค D": "#0ea5e9",
+        "พรรค E": "#2563eb",
+        "พรรค F": "#3b82f6",
+        "พรรค G": "#15803d",
+        "ประชาชน": "#f97316",
+        "เพื่อไทย": "#ef4444",
+        "ภูมิใจไทย": "#1d4ed8",
+    };
+    return colorMap[name] || "#64748b";
+};
+
+export default function MatchSummary({ results, userVotes, bills, onRestart, isMock }: MatchSummaryProps) {
     const [expandedBill, setExpandedBill] = useState<string | null>(null);
 
     if (!results || results.length === 0) return null;
@@ -51,8 +68,20 @@ export default function MatchSummary({ results, userVotes, bills, onRestart }: M
                                     ตรงใจที่สุด!
                                 </div>
                             )}
-                            <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white/30 mb-4 shadow-lg shrink-0 bg-white">
-                                <img src={getPartyLogo(match.partyName)} alt={match.partyName} className="w-full h-full object-cover" />
+                            <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white/30 mb-4 shadow-lg shrink-0 bg-white flex items-center justify-center">
+                                {isMock ? (
+                                    <div 
+                                        className="w-full h-full flex items-center justify-center font-bold text-sm p-2 text-center"
+                                        style={{ 
+                                            color: getPartyColor(match.partyName),
+                                            backgroundColor: `${getPartyColor(match.partyName)}15`
+                                        }}
+                                    >
+                                        {match.partyName.replace("พรรค ","")}
+                                    </div>
+                                ) : (
+                                    <img src={getPartyLogo(match.partyName)} alt={match.partyName} className="w-full h-full object-cover" />
+                                )}
                             </div>
                             <div className="text-xl font-black text-white mb-2">{match.partyName}</div>
                             <div className="text-yellow-300 font-bold text-2xl">{match.matchPercentage}%</div>
