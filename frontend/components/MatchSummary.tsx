@@ -62,7 +62,7 @@ export default function MatchSummary({ results, userVotes, bills, onRestart, isM
                 
                 <div className="flex flex-col md:flex-row justify-center items-stretch gap-6">
                     {results.slice(0, 3).map((match, idx) => (
-                        <div key={idx} className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/20 flex flex-col items-center flex-1 w-full relative transition-transform hover:scale-105">
+                        <div key={idx} className=" backdrop-blur-sm p-6 rounded-2xl flex flex-col items-center flex-1 w-full relative transition-transform hover:scale-105">
                             {idx === 0 && (
                                 <div className="absolute -top-4 bg-yellow-400 text-slate-900 text-xs font-black px-4 py-1.5 rounded-full shadow-lg">
                                     ตรงใจที่สุด!
